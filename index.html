@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LTM — Local Task Manager Main</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="project-data.js"></script>
+  <script defer src="task-app.js"></script>
+</head>
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-link" href="index.html" aria-label="Local Task Manager home">
+          <svg class="brand-mark" width="26" height="22" viewBox="0 0 26 22" fill="none" aria-hidden="true">
+            <rect x="0" y="2" width="7" height="20" rx="2" fill="url(#ltm-g1)"/>
+            <rect x="9.5" y="2" width="7" height="14" rx="2" fill="url(#ltm-g2)"/>
+            <rect x="19" y="2" width="7" height="8" rx="2" fill="url(#ltm-g3)"/>
+            <defs>
+              <linearGradient id="ltm-g1" x1="3.5" y1="2" x2="3.5" y2="22" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#a78bfa"/>
+                <stop offset="100%" stop-color="#7c3aed"/>
+              </linearGradient>
+              <linearGradient id="ltm-g2" x1="13" y1="2" x2="13" y2="16" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="100%" stop-color="#0284c7"/>
+              </linearGradient>
+              <linearGradient id="ltm-g3" x1="22.5" y1="2" x2="22.5" y2="10" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#71717a"/>
+                <stop offset="100%" stop-color="#3f3f46"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <span class="brand-name" id="brandName">LTM</span>
+        </a>
+        <button class="icon-button brand-info-btn" id="toggleInfoButton" type="button"
+          title="App info &amp; stats" aria-expanded="false" aria-controls="infoDrawer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+        </button>
+      </div>
+      <nav class="tabs" aria-label="Navigation">
+        <a class="tab active" href="index.html">Tasks</a>
+        <a class="tab" href="docs.html">Docs</a>
+        <a class="tab" href="resources.html">Resources</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="page-wrap">
+
+    <!-- ── Info panel (hidden) ────────────────────────────────────────────────── -->
+    <div class="info-panel" id="infoDrawer" hidden>
+      <div class="stats-grid" id="statsGrid"></div>
+      <p class="info-note" id="storageStatus"></p>
+      <div class="button-row">
+        <button class="secondary" id="exportJsonButton" type="button">Export JSON</button>
+        <button class="secondary" id="exportMarkdownButton" type="button">Export Markdown</button>
+        <button class="ghost" id="resetButton" type="button">Reset to Seed</button>
+      </div>
+      <div class="notice" id="seedNotice" hidden></div>
+    </div>
+
+    <!-- ── Toolbar ────────────────────────────────────────────────────────────── -->
+    <div class="toolbar">
+      <div class="view-toggle" id="viewToggle" role="tablist" aria-label="Task view">
+        <button class="view-button active" id="listViewButton" type="button" role="tab" aria-selected="true">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.2" stroke-linecap="round">
+            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/>
+            <circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/>
+          </svg>
+          List View
+        </button>
+        <button class="view-button" id="boardViewButton" type="button" role="tab" aria-selected="false">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="18" rx="1.5"/>
+            <rect x="14" y="3" width="7" height="12" rx="1.5"/>
+          </svg>
+          Board View
+        </button>
+      </div>
+
+      <div class="toolbar-right">
+        <button class="icon-button toolbar-icon-btn" id="searchToggle" type="button"
+          title="Search" aria-expanded="false" aria-controls="searchFilterBar">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </button>
+        <button class="icon-button toolbar-icon-btn" id="filterToggle" type="button"
+          title="Filter" aria-expanded="false" aria-controls="searchFilterBar">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+        </button>
+        <div class="card-fields-wrap" style="position:relative">
+          <button class="icon-button toolbar-icon-btn" id="cardFieldsBtn" type="button"
+            title="Card fields" hidden aria-expanded="false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+          <div class="card-fields-popover" id="cardFieldsPopover" hidden>
+            <div class="card-fields-heading">Show on cards</div>
+            <label class="card-field-item"><input type="checkbox" id="cfUrgency"> Urgency</label>
+            <label class="card-field-item"><input type="checkbox" id="cfNotes"> Notes preview</label>
+            <label class="card-field-item"><input type="checkbox" id="cfValue"> Value</label>
+            <label class="card-field-item"><input type="checkbox" id="cfArea"> Area</label>
+          </div>
+        </div>
+        <button class="primary toolbar-add-btn" id="openCreateButton" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          New
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Search + filter bar (expandable) ──────────────────────────────────── -->
+    <div class="search-filter-bar" id="searchFilterBar" hidden>
+      <input class="search-input" id="searchInput" type="text" placeholder="Search tasks…" autocomplete="off">
+      <select id="filterSelect">
+        <option value="all">All tasks</option>
+        <option value="active">Active only</option>
+        <option value="done">Completed / Archived</option>
+        <option value="urgent">Urgent (4+)</option>
+        <option value="recommended">Recommended</option>
+        <option value="requested">Requested</option>
+      </select>
+      <span class="filter-summary" id="filterSummary"></span>
+    </div>
+
+    <!-- ── Views container ───────────────────────────────────────────────────── -->
+
+    <!-- LIST VIEW -->
+    <div id="listView">
+      <div class="task-list" id="taskList"></div>
+      <div class="completed-wrap" id="hiddenListsWrap" hidden>
+        <button class="completed-toggle" id="hiddenListsToggle" type="button" aria-expanded="false">
+          <svg class="completed-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+          <span>Completed &amp; Archived</span>
+          <span class="completed-count" id="hiddenListsCount">0</span>
+        </button>
+        <div class="hidden-lists" id="hiddenLists" hidden></div>
+      </div>
+    </div>
+
+  </div><!-- /.page-wrap -->
+
+  <!-- BOARD VIEW — outside .page-wrap so it runs edge-to-edge -->
+  <div id="boardView" hidden>
+    <div class="board-columns" id="boardColumns"></div>
+    <div class="board-hidden-groups" id="boardCollapsedStrip" hidden>
+      <span class="board-hidden-groups-label">Hidden groups</span>
+      <div class="board-hidden-chips" id="boardHiddenChips"></div>
+    </div>
+  </div>
+
+  <!-- ── Task detail panel ─────────────────────────────────────────────────────
+       Notion-style slide-in from right. Shows on task click.
+  ─────────────────────────────────────────────────────────────────────────── -->
+  <div class="detail-overlay" id="detailOverlay" hidden aria-modal="true" role="dialog">
+    <div class="detail-backdrop" id="detailBackdrop"></div>
+    <div class="detail-panel" id="detailPanel">
+      <div class="detail-toolbar">
+        <button class="detail-back-btn" id="detailCloseBtn" type="button" aria-label="Close panel">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/><polyline points="9 18 3 12 9 6"/>
+          </svg>
+        </button>
+        <div class="detail-mode-toggle" id="detailModeToggle">
+          <button class="detail-mode-btn active" id="detailModeSide" type="button" title="Side panel">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="15" y1="3" x2="15" y2="21"/>
+            </svg>
+          </button>
+          <button class="detail-mode-btn" id="detailModeCenter" type="button" title="Centered view">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="3" width="14" height="18" rx="2"/>
+            </svg>
+          </button>
+          <button class="detail-mode-btn" id="detailModeFull" type="button" title="Full page">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+            </svg>
+          </button>
+        </div>
+        <!-- Hidden action buttons — bound by JS, triggered via prop-row clicks -->
+        <button id="detailMarkDoneBtn" type="button" style="display:none"></button>
+        <button id="detailDeleteBtn" type="button" style="display:none"></button>
+      </div>
+      <div class="detail-body">
+        <h1 class="detail-title" id="detailTitle" contenteditable="true"
+          spellcheck="true" data-placeholder="Task title…"></h1>
+        <div class="detail-props-section">
+          <div class="detail-props-header" id="detailPropsHeader">
+            <span class="detail-props-header-label">Properties</span>
+            <svg class="detail-props-chevron" id="detailPropsChevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+          <div class="detail-props" id="detailProps"></div>
+        </div>
+        <div class="detail-section-label">Notes</div>
+        <!-- NOTE: contenteditable editor — designed for future BlockNote migration.
+             Interface: getEditorContent() / setEditorContent(html) in task-app.js -->
+        <div class="detail-notes-editor" id="notesEditor"
+          contenteditable="true" spellcheck="true"
+          data-placeholder="Add notes, links, or context…"></div>
+        <p class="editor-hint">Cmd+B bold · Cmd+I italic · Cmd+Shift+8 list</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Column context menu ───────────────────────────────────────────────────
+       Appears on board column ··· click
+  ─────────────────────────────────────────────────────────────────────────── -->
+  <div class="col-menu" id="colMenu" hidden role="menu">
+    <button class="col-menu-item" id="colMenuRename" role="menuitem">Rename</button>
+    <button class="col-menu-item" id="colMenuMoveLeft" role="menuitem">Move left</button>
+    <button class="col-menu-item" id="colMenuMoveRight" role="menuitem">Move right</button>
+    <button class="col-menu-item" id="colMenuHide" role="menuitem">Hide column</button>
+    <div class="col-menu-sep" role="separator"></div>
+    <div class="col-menu-color-row" role="group" aria-label="Column color">
+      <span class="col-menu-color-label">Color</span>
+      <div class="col-menu-swatches" id="colMenuSwatches">
+        <button class="col-color-swatch swatch-default active" data-color="" title="Default"></button>
+        <button class="col-color-swatch swatch-purple" data-color="purple" title="Purple"></button>
+        <button class="col-color-swatch swatch-blue" data-color="blue" title="Blue"></button>
+        <button class="col-color-swatch swatch-cyan" data-color="cyan" title="Cyan"></button>
+        <button class="col-color-swatch swatch-green" data-color="green" title="Green"></button>
+        <button class="col-color-swatch swatch-orange" data-color="orange" title="Orange"></button>
+        <button class="col-color-swatch swatch-red" data-color="red" title="Red"></button>
+      </div>
+    </div>
+    <div class="col-menu-sep" role="separator"></div>
+    <button class="col-menu-item col-menu-danger" id="colMenuDelete" role="menuitem">Delete column</button>
+  </div>
+
+  <!-- ── Column rename dialog ──────────────────────────────────────────────── -->
+  <div class="modal-backdrop" id="renameModal" hidden>
+    <div class="modal-card modal-card--sm">
+      <div class="modal-header">
+        <h2 class="modal-title">Rename column</h2>
+        <button class="icon-button" type="button" id="renameModalClose" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label for="renameInput">Column name</label>
+        <input id="renameInput" type="text" placeholder="Column name…">
+      </div>
+      <div class="button-row">
+        <button class="primary" id="renameConfirm" type="button">Rename</button>
+        <button class="ghost" id="renameCancel" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Add column dialog ─────────────────────────────────────────────────── -->
+  <div class="modal-backdrop" id="addColModal" hidden>
+    <div class="modal-card modal-card--sm">
+      <div class="modal-header">
+        <h2 class="modal-title">Add column</h2>
+        <button class="icon-button" type="button" id="addColModalClose" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label for="addColInput">Column name</label>
+        <input id="addColInput" type="text" placeholder="e.g. Review…">
+      </div>
+      <div class="button-row">
+        <button class="primary" id="addColConfirm" type="button">Add column</button>
+        <button class="ghost" id="addColCancel" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Create / Edit task modal ──────────────────────────────────────────── -->
+  <div class="modal-backdrop" id="taskModal" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">New Task</h2>
+        <button class="icon-button" type="button" id="closeModalButton" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <form id="taskForm" autocomplete="off">
+        <div class="form-grid">
+          <div class="field full">
+            <label for="taskTitle">Title</label>
+            <input id="taskTitle" name="taskTitle" required placeholder="What needs to be done?">
+          </div>
+          <div class="field">
+            <label for="taskLane">Stage</label>
+            <select id="taskLane" name="taskLane"></select>
+          </div>
+          <div class="field">
+            <label for="taskUrgency">Urgency</label>
+            <select id="taskUrgency" name="taskUrgency">
+              <option value="1">1 — Low</option>
+              <option value="2">2</option>
+              <option value="3" selected>3 — Medium</option>
+              <option value="4">4 — High</option>
+              <option value="5">5 — Critical</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="taskValue">Value ($)</label>
+            <input id="taskValue" name="taskValue" type="number" min="0" step="100" placeholder="e.g. 5000">
+          </div>
+          <div class="field">
+            <label for="taskArea">Area</label>
+            <select id="taskArea" name="taskArea"></select>
+          </div>
+          <div class="field">
+            <label for="taskSource">Source</label>
+            <select id="taskSource" name="taskSource">
+              <option value="user-requested" selected>Requested</option>
+              <option value="recommended">Recommended</option>
+              <option value="local-note">Local note</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label for="taskNotes">Quick note</label>
+            <textarea id="taskNotes" name="taskNotes" placeholder="Keep it short and action-oriented."></textarea>
+          </div>
+        </div>
+        <div class="button-row" style="margin-top:14px;">
+          <button class="primary" type="submit" id="submitButton">Save Task</button>
+          <button class="ghost" type="button" id="cancelEditButton">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</body>
+</html>

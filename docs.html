@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LTM Docs — Local Task Manager Main</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="project-data.js"></script>
+  <script defer src="docs-content.js"></script>
+  <script defer src="docs-app.js"></script>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-link" href="index.html" aria-label="Local Task Manager home">
+          <svg class="brand-mark" width="26" height="22" viewBox="0 0 26 22" fill="none" aria-hidden="true">
+            <rect x="0" y="2" width="7" height="20" rx="2" fill="url(#ltm-g1d)"/>
+            <rect x="9.5" y="2" width="7" height="14" rx="2" fill="url(#ltm-g2d)"/>
+            <rect x="19" y="2" width="7" height="8" rx="2" fill="url(#ltm-g3d)"/>
+            <defs>
+              <linearGradient id="ltm-g1d" x1="3.5" y1="2" x2="3.5" y2="22" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#a78bfa"/>
+                <stop offset="100%" stop-color="#7c3aed"/>
+              </linearGradient>
+              <linearGradient id="ltm-g2d" x1="13" y1="2" x2="13" y2="16" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="100%" stop-color="#0284c7"/>
+              </linearGradient>
+              <linearGradient id="ltm-g3d" x1="22.5" y1="2" x2="22.5" y2="10" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#71717a"/>
+                <stop offset="100%" stop-color="#3f3f46"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <span class="brand-name">LTM</span>
+        </a>
+      </div>
+      <nav class="tabs" aria-label="Navigation">
+        <a class="tab" href="index.html">Tasks</a>
+        <a class="tab active" href="docs.html">Docs</a>
+        <a class="tab" href="resources.html">Resources</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="docs-page">
+
+    <aside class="docs-sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Documentation</div>
+        <div class="sidebar-items" id="docsNav"></div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Skills</div>
+        <div class="sidebar-items" id="skillsNav"></div>
+      </div>
+    </aside>
+
+    <main class="docs-viewer">
+      <div class="viewer-header">
+        <div>
+          <p class="viewer-eyebrow" id="viewerType">Document</p>
+          <h2 class="viewer-title" id="viewerTitle">Loading…</h2>
+          <p class="viewer-summary" id="viewerSummary"></p>
+        </div>
+        <a class="ghost" id="openRawLink" href="../docs/README.md"
+          style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);text-decoration:none;font-size:0.8rem;color:var(--muted);transition:color 0.15s,background 0.15s;"
+          onmouseover="this.style.color='var(--text)';this.style.background='rgba(255,255,255,0.05)'"
+          onmouseout="this.style.color='var(--muted)';this.style.background='transparent'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          Open raw
+        </a>
+      </div>
+      <div class="markdown-view" id="docPreview"></div>
+    </main>
+
+  </div>
+
+  <span id="docsReviewedOn" hidden></span>
+  <span id="docsMaintainedBy" hidden></span>
+
+</body>
+</html>

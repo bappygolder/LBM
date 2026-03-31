@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LTM Resources — Local Task Manager Main</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a class="brand-link" href="index.html" aria-label="Local Task Manager home">
+          <svg class="brand-mark" width="26" height="22" viewBox="0 0 26 22" fill="none" aria-hidden="true">
+            <rect x="0" y="2" width="7" height="20" rx="2" fill="url(#ltm-g1r)"/>
+            <rect x="9.5" y="2" width="7" height="14" rx="2" fill="url(#ltm-g2r)"/>
+            <rect x="19" y="2" width="7" height="8" rx="2" fill="url(#ltm-g3r)"/>
+            <defs>
+              <linearGradient id="ltm-g1r" x1="3.5" y1="2" x2="3.5" y2="22" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#a78bfa"/>
+                <stop offset="100%" stop-color="#7c3aed"/>
+              </linearGradient>
+              <linearGradient id="ltm-g2r" x1="13" y1="2" x2="13" y2="16" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="100%" stop-color="#0284c7"/>
+              </linearGradient>
+              <linearGradient id="ltm-g3r" x1="22.5" y1="2" x2="22.5" y2="10" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#71717a"/>
+                <stop offset="100%" stop-color="#3f3f46"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <span class="brand-name">LTM</span>
+        </a>
+      </div>
+      <nav class="tabs" aria-label="Navigation">
+        <a class="tab" href="index.html">Tasks</a>
+        <a class="tab" href="docs.html">Docs</a>
+        <a class="tab active" href="resources.html">Resources</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="resources-wrap">
+
+    <h1 class="resources-heading">Resources</h1>
+    <p class="resources-subheading">
+      Design assets, icons, and reference files for this project. Tracked in git — not included in the macOS app build.
+    </p>
+
+    <!-- ── LTM own assets ──────────────────────────────────────────────────── -->
+    <div class="resources-section">
+      <div class="resources-section-title">LTM App Assets</div>
+
+      <div class="resource-card">
+        <div class="resource-icon">📁</div>
+        <div class="resource-info">
+          <p class="resource-name">Resources folder</p>
+          <p class="resource-path">TaskTracker/resources/</p>
+        </div>
+        <p class="resource-note">Drop files here. Update the list below after adding.</p>
+      </div>
+
+      <div class="resource-card">
+        <div class="resource-icon">📄</div>
+        <div class="resource-info">
+          <p class="resource-name">Resources README</p>
+          <p class="resource-path">TaskTracker/resources/README.md</p>
+        </div>
+        <p class="resource-note">Instructions for adding and managing assets.</p>
+      </div>
+
+    </div>
+
+    <!-- ── Project source files ─────────────────────────────────────────────── -->
+    <div class="resources-section">
+      <div class="resources-section-title">LTM Source Files</div>
+
+      <div class="resource-card">
+        <div class="resource-icon">🗂</div>
+        <div class="resource-info">
+          <p class="resource-name">Task app — main entry</p>
+          <p class="resource-path">TaskTracker/index.html</p>
+        </div>
+        <p class="resource-note">List View + Board View. Open directly in browser.</p>
+      </div>
+
+      <div class="resource-card">
+        <div class="resource-icon">⚙️</div>
+        <div class="resource-info">
+          <p class="resource-name">Task app logic</p>
+          <p class="resource-path">TaskTracker/task-app.js</p>
+        </div>
+        <p class="resource-note">All task, board, detail panel, and column management logic.</p>
+      </div>
+
+      <div class="resource-card">
+        <div class="resource-icon">🎨</div>
+        <div class="resource-info">
+          <p class="resource-name">Styles</p>
+          <p class="resource-path">TaskTracker/styles.css</p>
+        </div>
+        <p class="resource-note">All styles for every page. CSS variables at the top.</p>
+      </div>
+
+      <div class="resource-card">
+        <div class="resource-icon">🌱</div>
+        <div class="resource-info">
+          <p class="resource-name">Seed data</p>
+          <p class="resource-path">TaskTracker/project-data.js</p>
+        </div>
+        <p class="resource-note">Task seed, docs index, areas. Edit here to change defaults.</p>
+      </div>
+
+      <div class="resource-card">
+        <div class="resource-icon">📚</div>
+        <div class="resource-info">
+          <p class="resource-name">Docs viewer</p>
+          <p class="resource-path">TaskTracker/docs.html + docs-app.js + docs-content.js</p>
+        </div>
+        <p class="resource-note">Markdown doc viewer, pre-rendered content cache, and logic.</p>
+      </div>
+
+    </div>
+
+    <!-- ── Claude Code context ──────────────────────────────────────────────── -->
+    <div class="resources-section">
+      <div class="resources-section-title">Claude Code Context</div>
+
+      <div class="resource-card">
+        <div class="resource-icon">🤖</div>
+        <div class="resource-info">
+          <p class="resource-name">LTM session bootstrap</p>
+          <p class="resource-path">TaskTracker/CLAUDE.md</p>
+        </div>
+        <p class="resource-note">Loaded automatically when TaskTracker/ is open in Claude Code.</p>
+      </div>
+
+      <div class="resource-card">
+        <div class="resource-icon">🛠</div>
+        <div class="resource-info">
+          <p class="resource-name">Development skill guide</p>
+          <p class="resource-path">TaskTracker/SKILL.md</p>
+        </div>
+        <p class="resource-note">How to extend features, add columns, add docs, run locally.</p>
+      </div>
+
+    </div>
+
+    <!-- ── How to add resources ─────────────────────────────────────────────── -->
+    <div class="resources-section">
+      <div class="resources-section-title">Adding a Resource</div>
+
+      <div class="add-resource-hint">
+        <strong>To add a file:</strong><br>
+        1. Drop the file into <code>TaskTracker/resources/</code><br>
+        2. Open <code>resources.html</code> and add a card in the relevant section:<br><br>
+        <code>&lt;div class="resource-card"&gt;<br>
+        &nbsp;&nbsp;&lt;div class="resource-icon"&gt;🖼&lt;/div&gt;<br>
+        &nbsp;&nbsp;&lt;div class="resource-info"&gt;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&lt;p class="resource-name"&gt;My Asset&lt;/p&gt;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&lt;p class="resource-path"&gt;TaskTracker/resources/my-asset.png&lt;/p&gt;<br>
+        &nbsp;&nbsp;&lt;/div&gt;<br>
+        &lt;/div&gt;</code><br><br>
+        3. Commit both files to git normally.<br>
+        4. These files will <strong>not</strong> be included in the macOS app build.
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
