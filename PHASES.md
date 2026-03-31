@@ -158,11 +158,11 @@ git push
 **Workspace:** Open `Local Business Manager/` in Claude Code.
 Read `CLAUDE.md` and `SKILL.md` before doing anything.
 
-**Context:** The LBM is designed to be dropped into any project repo. Right now the project name, areas, and seed tasks are hardcoded in `project-data.js`. This phase makes it fully portable.
+**Context:** The LBM is designed to be dropped into any project repo. Right now the project name, areas, and seed tasks are hardcoded in `data/project-data.js`. This phase makes it fully portable.
 
 **Your job:**
 
-1. **`ltm.config.json`** — Extract project identity out of `project-data.js` into a new `TaskTracker/ltm.config.json`:
+1. **`ltm.config.json`** — Extract project identity out of `data/project-data.js` into a new `TaskTracker/ltm.config.json`:
    ```json
    {
      "name": "LBM",
@@ -172,7 +172,7 @@ Read `CLAUDE.md` and `SKILL.md` before doing anything.
      "seedVersion": "2026-03-30-r2"
    }
    ```
-   Load this in `project-data.js` via a `fetch("ltm.config.json")` at startup (or inline it — your call based on what works without a build step).
+   Load this in `data/project-data.js` via a `fetch("ltm.config.json")` at startup (or inline it — your call based on what works without a build step).
 
 2. **`setup.sh`** — Write a shell script at `TaskTracker/setup.sh` that copies the LBM into a target repo:
    ```bash

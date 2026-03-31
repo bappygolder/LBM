@@ -1,5 +1,12 @@
 (function () {
-  const data = window.MCCProjectData;
+  const data = window.MCCProjectData || {
+    project: {
+      reviewedOn: new Date().toISOString().split('T')[0],
+      maintainedBy: "Local User"
+    },
+    docs: [],
+    skills: []
+  };
   const previewContent = window.MCCDocContent || {};
   const docsReviewedOn = document.getElementById("docsReviewedOn");
   const docsMaintainedBy = document.getElementById("docsMaintainedBy");

@@ -25,14 +25,14 @@ cd TaskTracker && python3 -m http.server 8080
 
 1. **New task field** → update `normalizeTask()` in `task-app.js` to add the field with a default, add it to the modal form in `index.html`, and handle it in `handleSubmit()`.
 2. **New board column** → update `DEFAULT_BOARD_COLUMNS` in `task-app.js` and add the lane key to `ALL_LANES` / `ACTIVE_LANES` as appropriate.
-3. **New page** → copy the header from `docs.html`, add the tab to all 3 pages (index, docs, resources), import `styles.css` and `project-data.js`.
-4. **New doc** → add an entry to the `docs` array in `project-data.js`. The docs viewer picks it up automatically.
+3. **New page** → copy the header from `docs.html`, add the tab to all 3 pages (index, docs, resources), import `styles.css` and `data/project-data.js`.
+4. **New doc** → add an entry to the `docs` array in `data/project-data.js`. The docs viewer picks it up automatically.
 
 ---
 
 ## SEED DATA
 
-Task seed data lives in `project-data.js` under `window.MCCProjectData.tracker.tasks`. To reset a browser to the latest seed: open the info panel (ⓘ button) and click "Reset to Seed".
+Task seed data lives in `data/project-data.js` under `window.MCCProjectData.tracker.tasks`. To reset a browser to the latest seed: open the info panel (ⓘ button) and click "Reset to Seed".
 
 ---
 

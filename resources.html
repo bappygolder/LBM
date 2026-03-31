@@ -59,7 +59,7 @@
         <div class="resource-icon">📁</div>
         <div class="resource-info">
           <p class="resource-name">Resources folder</p>
-          <p class="resource-path">TaskTracker/resources/</p>
+          <p class="resource-path">resources/</p>
         </div>
         <p class="resource-note">Drop files here. Update the list below after adding.</p>
       </div>
@@ -68,7 +68,7 @@
         <div class="resource-icon">📄</div>
         <div class="resource-info">
           <p class="resource-name">Resources README</p>
-          <p class="resource-path">TaskTracker/resources/README.md</p>
+          <p class="resource-path">resources/README.md</p>
         </div>
         <p class="resource-note">Instructions for adding and managing assets.</p>
       </div>
@@ -92,7 +92,7 @@
         <div class="resource-icon">⚙️</div>
         <div class="resource-info">
           <p class="resource-name">Task app logic</p>
-          <p class="resource-path">TaskTracker/task-app.js</p>
+          <p class="resource-path">task-app.js</p>
         </div>
         <p class="resource-note">All task, board, detail panel, and column management logic.</p>
       </div>
@@ -101,7 +101,7 @@
         <div class="resource-icon">🎨</div>
         <div class="resource-info">
           <p class="resource-name">Styles</p>
-          <p class="resource-path">TaskTracker/styles.css</p>
+          <p class="resource-path">styles.css</p>
         </div>
         <p class="resource-note">All styles for every page. CSS variables at the top.</p>
       </div>
@@ -110,7 +110,7 @@
         <div class="resource-icon">🌱</div>
         <div class="resource-info">
           <p class="resource-name">Seed data</p>
-          <p class="resource-path">TaskTracker/project-data.js</p>
+          <p class="resource-path">data/project-data.js</p>
         </div>
         <p class="resource-note">Task seed, docs index, areas. Edit here to change defaults.</p>
       </div>
@@ -119,7 +119,7 @@
         <div class="resource-icon">📚</div>
         <div class="resource-info">
           <p class="resource-name">Docs viewer</p>
-          <p class="resource-path">TaskTracker/docs.html + docs-app.js + docs-content.js</p>
+          <p class="resource-path">docs.html + docs-app.js + data/docs-content.js</p>
         </div>
         <p class="resource-note">Markdown doc viewer, pre-rendered content cache, and logic.</p>
       </div>
@@ -134,7 +134,7 @@
         <div class="resource-icon">🤖</div>
         <div class="resource-info">
           <p class="resource-name">LBM session bootstrap</p>
-          <p class="resource-path">TaskTracker/CLAUDE.md</p>
+          <p class="resource-path">CLAUDE.md</p>
         </div>
         <p class="resource-note">Loaded automatically when TaskTracker/ is open in Claude Code.</p>
       </div>
@@ -143,7 +143,7 @@
         <div class="resource-icon">🛠</div>
         <div class="resource-info">
           <p class="resource-name">Development skill guide</p>
-          <p class="resource-path">TaskTracker/SKILL.md</p>
+          <p class="resource-path">SKILL.md</p>
         </div>
         <p class="resource-note">How to extend features, add columns, add docs, run locally.</p>
       </div>
@@ -156,17 +156,16 @@
 
       <div class="add-resource-hint">
         <strong>To add a file:</strong><br>
-        1. Drop the file into <code>TaskTracker/resources/</code><br>
+        1. Drop the file into <code>resources/</code><br>
         2. Open <code>resources.html</code> and add a card in the relevant section:<br><br>
         <code>&lt;div class="resource-card"&gt;<br>
         &nbsp;&nbsp;&lt;div class="resource-icon"&gt;🖼&lt;/div&gt;<br>
         &nbsp;&nbsp;&lt;div class="resource-info"&gt;<br>
         &nbsp;&nbsp;&nbsp;&nbsp;&lt;p class="resource-name"&gt;My Asset&lt;/p&gt;<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&lt;p class="resource-path"&gt;TaskTracker/resources/my-asset.png&lt;/p&gt;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&lt;p class="resource-path"&gt;resources/my-asset.png&lt;/p&gt;<br>
         &nbsp;&nbsp;&lt;/div&gt;<br>
         &lt;/div&gt;</code><br><br>
-        3. Commit both files to git normally.<br>
-        4. These files will <strong>not</strong> be included in the macOS app build.
+        3. Commit both files to git normally.
       </div>
     </div>
 

@@ -34,6 +34,6 @@ Because this app uses zero build-steps, you can use it immediately.
 3. Start managing your tasks! All state is saved directly to your browser's local storage.
 
 ### Customization
-- Open **`project-data.js`** to change the project name, define your specific working areas, and adjust the initial "seed tasks".
+- Open **`data/project-data.js`** to change the project name, define your specific working areas, and adjust the initial "seed tasks".
 - Read **`SKILL.md`** and **`CLAUDE.md`** for insights on extending the UI using AI or making code-level customizations.
 - Review the **[Docs](docs.html)** tab inside the app for more extensive guides on Persistence, State, and the Project System framework.

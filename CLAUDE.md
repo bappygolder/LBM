@@ -26,8 +26,8 @@ Local Business Manager/
 ├── styles.css             ← all styles for every page
 ├── task-app.js            ← list + board + detail panel logic
 ├── docs-app.js            ← docs viewer logic
-├── docs-content.js        ← pre-rendered doc content cache
-├── project-data.js        ← seed tasks, docs index, areas config
+├── data/docs-content.js        ← pre-rendered doc content cache
+├── data/project-data.js        ← seed tasks, docs index, areas config
 ├── docs/                  ← LBM documentation
 │   ├── LOCAL_PROJECT_SYSTEM.md    ← tracker workflow guide
 │   └── PERSISTENCE_AND_STATE.md  ← data storage reference
@@ -40,7 +40,7 @@ Local Business Manager/
 ## KEY DESIGN RULES
 
 - **Vanilla JS + HTML/CSS only** — no build step, no npm. Open `index.html` in a browser.
-- **Local-first** — all task state lives in `localStorage`. The seed data in `project-data.js` is the git-tracked baseline.
+- **Local-first** — all task state lives in `localStorage`. The seed data in `data/project-data.js` is the git-tracked baseline.
 - **Notes field** — `task.notes` is plain text (preview). `task.body` is HTML (rich text from the detail panel editor).
 - **Lane system** — `processing` and `on-hold` are separate lane values but display under the same "Processing / On Hold" board column.
 - **Board collapse** — collapsed columns are stored in `localStorage` under `ui.collapsedColumns`. They render as vertical strips on the right side of the board.

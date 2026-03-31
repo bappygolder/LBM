@@ -10,7 +10,24 @@
 (function () {
   "use strict";
 
-  const data    = window.MCCProjectData;
+  const data = window.MCCProjectData || {
+    project: {
+      name: "LBM",
+      fullName: "Local Business Manager",
+      reviewedOn: new Date().toISOString().split('T')[0],
+      maintainedBy: "Local User",
+      summary: "Standalone local task tracker."
+    },
+    tracker: {
+      storageKey: "lbm-local-task-tracker",
+      seedVersion: "1.0",
+      recommendedByLabel: "System",
+      areas: ["general"],
+      tasks: []
+    },
+    docs: [],
+    skills: []
+  };
   const tracker = data.tracker;
   const STORAGE_KEY = tracker.storageKey;
 
@@ -196,6 +213,16 @@
     if (state.ui.propsCollapsed !== undefined) propsCollapsed = Boolean(state.ui.propsCollapsed);
     if (state.ui.listSort) listSort = state.ui.listSort;
 
+    // Re-register any custom lane keys saved in boardColumns so list view and
+    // normalizeLane() can find them after a page reload.
+    boardColumns.forEach(col => {
+      col.lanes.forEach(laneKey => {
+        if (!ALL_LANES.includes(laneKey))    ALL_LANES.push(laneKey);
+        if (!ACTIVE_LANES.includes(laneKey)) ACTIVE_LANES.push(laneKey);
+        if (!LANE_LABELS[laneKey])           LANE_LABELS[laneKey] = col.label;
+      });
+    });
+
     if (state.seedVersion !== tracker.seedVersion) {
       el.seedNotice.hidden = false;
       el.seedNotice.textContent = "Browser state is from an older seed. Reset if you want the latest baseline.";
@@ -217,6 +244,18 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return freshState();
       const parsed = JSON.parse(raw);
+      // Register custom lane keys from saved boardColumns BEFORE normalizing tasks,
+      // so normalizeLane() preserves custom lane values instead of falling back to backlog.
+      const savedCols = (parsed.ui && Array.isArray(parsed.ui.boardColumns))
+        ? parsed.ui.boardColumns
+        : [];
+      savedCols.forEach(col => {
+        (col.lanes || []).forEach(laneKey => {
+          if (!ALL_LANES.includes(laneKey))    ALL_LANES.push(laneKey);
+          if (!ACTIVE_LANES.includes(laneKey)) ACTIVE_LANES.push(laneKey);
+          if (!LANE_LABELS[laneKey])           LANE_LABELS[laneKey] = col.label;
+        });
+      });
       return {
         seedVersion: parsed.seedVersion || "unknown",
         tasks: Array.isArray(parsed.tasks) ? parsed.tasks.map(normalizeTask) : tracker.tasks.map(normalizeTask),
@@ -761,7 +800,8 @@
     section.draggable = true;
     section.addEventListener("dragstart", e => {
       // Only start if dragging the header area (not a card)
-      if (e.target.closest(".board-card")) { e.preventDefault(); return; }
+      // NOTE: do NOT call e.preventDefault() here — that cancels the card drag too
+      if (e.target.closest(".board-card")) { return; }
       colDragKey = col.key;
       e.dataTransfer.effectAllowed = "move";
       setTimeout(() => section.classList.add("col-dragging"), 0);
@@ -845,7 +885,7 @@
     if (!colTasks.length) {
       const empty = document.createElement("div");
       empty.className = "board-empty";
-      empty.textContent = "Drop here";
+      empty.textContent = "Drop a card here or click + New item";
       body.appendChild(empty);
     } else {
       colTasks.forEach(t => body.appendChild(buildBoardCard(t)));
@@ -904,6 +944,7 @@
     card.addEventListener("dragstart", e => {
       if (colDragKey) { e.stopPropagation(); return; } // don't interfere with col drag
       dragTaskId = task.id;
+      e.stopPropagation(); // prevent bubbling to section (its dragstart calls preventDefault, cancelling this drag)
       setTimeout(() => card.classList.add("is-dragging"), 0);
       e.dataTransfer.effectAllowed = "move";
     });
