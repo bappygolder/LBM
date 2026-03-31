@@ -1,4 +1,4 @@
-# LTM — Phase Handover Guide
+# LBM — Phase Handover Guide
 
 Each phase ends with a commit + push + the self-contained prompt below it.
 Copy the prompt block for that phase into a new Claude Code chat window.
@@ -7,10 +7,10 @@ Copy the prompt block for that phase into a new Claude Code chat window.
 
 ## ✅ Phase 0 — Completed (this session)
 
-Full LTM redesign. Commit: `347345f` on `main`.
+Full LBM redesign. Commit: `347345f` on `main`.
 
 What was built:
-- New header: abstract kanban SVG logo, LTM branding, Tasks/Docs/Resources nav
+- New header: abstract kanban SVG logo, LBM branding, Tasks/Docs/Resources nav
 - Toolbar: List View / Board View tabs, collapsible search+filter, + New button, meta-row removed
 - List view: tabular, hover ✓ Done button, click to open detail panel
 - Board view: 6 columns, Notion-style right-side collapse, 3-dot column menu (rename/move/hide/delete), + New item footer, + Add column button
@@ -34,10 +34,10 @@ Then paste the prompt below into a new chat.
 ### PHASE 1 PROMPT — copy everything between the lines
 
 ---
-**Workspace:** Open `Local Task Manager Main/` in Claude Code.
+**Workspace:** Open `Local Business Manager/` in Claude Code.
 Read `CLAUDE.md` and `SKILL.md` before doing anything.
 
-**Context:** The LTM (Local Task Manager) was fully redesigned in the previous session (commit `347345f`). It is a vanilla JS/HTML/CSS app — no build step. Open `TaskTracker/index.html` in the browser before starting.
+**Context:** The LBM (Local Business Manager) was fully redesigned in the previous session (commit `347345f`). It is a vanilla JS/HTML/CSS app — no build step. Open `index.html` in the browser before starting.
 
 **Your job — fix these known issues one by one, testing in the browser after each:**
 
@@ -72,10 +72,10 @@ git push
 ### PHASE 2 PROMPT — copy everything between the lines
 
 ---
-**Workspace:** Open `Local Task Manager Main/` in Claude Code.
+**Workspace:** Open `Local Business Manager/` in Claude Code.
 Read `CLAUDE.md` and `SKILL.md` before doing anything.
 
-**Context:** The LTM (Local Task Manager) is a vanilla JS/HTML/CSS task tracker — no build step. Open `TaskTracker/index.html` in a browser first. Phase 1 bugs are fixed (custom lanes, full-width board, inline stage select, list sort).
+**Context:** The LBM (Local Business Manager) is a vanilla JS/HTML/CSS task tracker — no build step. Open `index.html` in a browser first. Phase 1 bugs are fixed (custom lanes, full-width board, inline stage select, list sort).
 
 **Your job:**
 
@@ -112,10 +112,10 @@ git push
 ### PHASE 3 PROMPT — copy everything between the lines
 
 ---
-**Workspace:** Open `Local Task Manager Main/` in Claude Code.
+**Workspace:** Open `Local Business Manager/` in Claude Code.
 Read `CLAUDE.md` and `SKILL.md` before doing anything.
 
-**Context:** The LTM notes editor currently uses a `contenteditable` div. It is designed to be replaced with BlockNote. The swap interface is `getEditorContent()` / `setEditorContent()` in `task-app.js`. `task.body` stores the content.
+**Context:** The LBM notes editor currently uses a `contenteditable` div. It is designed to be replaced with BlockNote. The swap interface is `getEditorContent()` / `setEditorContent()` in `task-app.js`. `task.body` stores the content.
 
 **Important:** BlockNote requires React. This phase adds a Vite + React build setup to `TaskTracker/`. The existing `index.html`, `styles.css`, `task-app.js` stay as-is except the detail panel notes section gets swapped. Keep the build output separate so the app still opens as `index.html` for non-React parts OR do a full React migration if cleaner.
 
@@ -155,17 +155,17 @@ git push
 ### PHASE 4 PROMPT — copy everything between the lines
 
 ---
-**Workspace:** Open `Local Task Manager Main/` in Claude Code.
+**Workspace:** Open `Local Business Manager/` in Claude Code.
 Read `CLAUDE.md` and `SKILL.md` before doing anything.
 
-**Context:** The LTM is designed to be dropped into any project repo. Right now the project name, areas, and seed tasks are hardcoded in `project-data.js`. This phase makes it fully portable.
+**Context:** The LBM is designed to be dropped into any project repo. Right now the project name, areas, and seed tasks are hardcoded in `project-data.js`. This phase makes it fully portable.
 
 **Your job:**
 
 1. **`ltm.config.json`** — Extract project identity out of `project-data.js` into a new `TaskTracker/ltm.config.json`:
    ```json
    {
-     "name": "LTM",
+     "name": "LBM",
      "fullName": "Mac Control Center",
      "storageKey": "mac-control-center-task-tracker-v1",
      "areas": ["project-system", "docs", "product", "platform", "release", "security", "ui-ux"],
@@ -174,13 +174,13 @@ Read `CLAUDE.md` and `SKILL.md` before doing anything.
    ```
    Load this in `project-data.js` via a `fetch("ltm.config.json")` at startup (or inline it — your call based on what works without a build step).
 
-2. **`setup.sh`** — Write a shell script at `TaskTracker/setup.sh` that copies the LTM into a target repo:
+2. **`setup.sh`** — Write a shell script at `TaskTracker/setup.sh` that copies the LBM into a target repo:
    ```bash
    ./setup.sh /path/to/target-repo "My Project Name"
    ```
    It should: copy `TaskTracker/` into the target, replace the name in `ltm.config.json`, clear the seed tasks (leave a blank example), and print next steps.
 
-3. **README update** — Rewrite `TaskTracker/README.md` to be the canonical "how to use LTM in your project" guide. Sections: What is LTM · Running locally · Customising (name, areas, seed tasks) · Adding docs · Column management · Notes on the build exclusion.
+3. **README update** — Rewrite `TaskTracker/README.md` to be the canonical "how to use LBM in your project" guide. Sections: What is LBM · Running locally · Customising (name, areas, seed tasks) · Adding docs · Column management · Notes on the build exclusion.
 
 4. **`.gitignore` update** — At the root of the Mac Control Centre repo, ensure these are gitignored (if not already): `TaskTracker/editor/node_modules/`, `TaskTracker/editor/dist/` is committed (not ignored).
 

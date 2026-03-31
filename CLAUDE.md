@@ -1,4 +1,4 @@
-# CLAUDE.md — Local Task Manager (LTM) v1
+# CLAUDE.md — Local Business Manager (LBM) v1
 
 This file is loaded automatically when this folder is open as a workspace in Claude Code. Read it before responding to any request.
 
@@ -6,7 +6,7 @@ This file is loaded automatically when this folder is open as a workspace in Cla
 
 ## WHAT THIS IS
 
-The **Local Task Manager (LTM)** is a self-contained, browser-based task tracker. It is designed to be a standalone project — open this folder directly in Claude Code and it works independently.
+The **Local Business Manager (LBM)** is a self-contained, browser-based task tracker. It is designed to be a standalone project — open this folder directly in Claude Code and it works independently.
 
 This is **v1** — a self-contained snapshot with sample tasks and full documentation included.
 
@@ -15,9 +15,9 @@ This is **v1** — a self-contained snapshot with sample tasks and full document
 ## FILE MAP
 
 ```
-Local Task Manager Main/
+Local Business Manager/
 ├── CLAUDE.md              ← you are here (session bootstrap)
-├── SKILL.md               ← how to develop and extend the LTM
+├── SKILL.md               ← how to develop and extend the LBM
 ├── PHASES.md              ← phase handover guide with staged prompts
 ├── README.md              ← setup + usage guide
 ├── index.html             ← main app (List + Board views)
@@ -28,7 +28,7 @@ Local Task Manager Main/
 ├── docs-app.js            ← docs viewer logic
 ├── docs-content.js        ← pre-rendered doc content cache
 ├── project-data.js        ← seed tasks, docs index, areas config
-├── docs/                  ← LTM documentation
+├── docs/                  ← LBM documentation
 │   ├── LOCAL_PROJECT_SYSTEM.md    ← tracker workflow guide
 │   └── PERSISTENCE_AND_STATE.md  ← data storage reference
 └── resources/             ← design assets

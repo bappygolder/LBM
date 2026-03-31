@@ -1,6 +1,6 @@
 # Resources
 
-Design assets, reference files, and exported icons for the Local Task Manager (LTM).
+Design assets, reference files, and exported icons for the Local Business Manager (LBM).
 
 ---
 
@@ -23,7 +23,7 @@ Design assets, reference files, and exported icons for the Local Task Manager (L
 
 1. Drop the file into this folder.
 2. Open `resources.html` in a text editor.
-3. Add an entry to the `LTM_RESOURCES` array in `resources.html`:
+3. Add an entry to the `LBM_RESOURCES` array in `resources.html`:
 
 ```js
 { name: "App Icon (PNG 512×512)", file: "resources/app-icon-512.png", type: "image" },

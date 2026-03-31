@@ -6,7 +6,7 @@ Keep project management and documentation close to the codebase so AI agents and
 
 ## Components
 
-### `TaskTracker/index.html`
+### `index.html`
 
 Local-first task board for backlog review, quick edits, export, and manual prioritization.
 

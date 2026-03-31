@@ -1,5 +1,5 @@
 /* ──────────────────────────────────────────────────────────────────────────────
-   LTM — Local Task Manager · task-app.js
+   LBM — Local Business Manager · task-app.js
    Vanilla JS, no build step.
 
    NOTE on the notes editor: uses contenteditable with basic formatting support.
@@ -202,7 +202,7 @@
     }
 
     el.storageStatus.textContent = "Self-contained: seed data in project-data.js + browser localStorage. No external database needed.";
-    el.brandName.textContent     = data.project.name || "LTM";
+    el.brandName.textContent     = data.project.name || "LBM";
 
     populateAreaSelect();
     populateLaneSelect();
@@ -1672,7 +1672,7 @@
 
   function exportMarkdown() {
     const dt    = today();
-    const lines = ["# LTM Tasks", "", `Exported: ${new Date().toISOString()}`, "", "## Tasks", ""];
+    const lines = ["# LBM Tasks", "", `Exported: ${new Date().toISOString()}`, "", "## Tasks", ""];
     tasks.slice().sort(sortTasks).forEach(t => {
       lines.push(`- ${t.title} | ${LANE_LABELS[t.lane] || t.lane} | urgency ${t.urgency}`);
       if (t.notes) lines.push(`  Notes: ${t.notes}`);

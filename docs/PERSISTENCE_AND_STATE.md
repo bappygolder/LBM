@@ -41,7 +41,7 @@ This project has three different persistence layers, and they behave differently
 - Not visible in git
 - Not automatically shared unless the OS syncs preferences externally
 
-## 3. Local Task Manager Main State
+## 3. Local Business Manager State
 
 ### Stored In
 

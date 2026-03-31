@@ -1,6 +1,6 @@
-# SKILL.md — LTM Development Guide
+# SKILL.md — LBM Development Guide
 
-How to develop and extend the Local Task Manager.
+How to develop and extend the Local Business Manager.
 
 ---
 
@@ -9,7 +9,7 @@ How to develop and extend the Local Task Manager.
 No build step. Open `index.html` directly in a browser:
 
 ```bash
-open TaskTracker/index.html
+open index.html
 ```
 
 Or serve locally to avoid CORS issues with doc file loading:

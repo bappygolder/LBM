@@ -1,11 +1,11 @@
 window.MCCProjectData = {
   project: {
-    name: "LTM",
-    fullName: "Local Task Manager Main",
+    name: "LBM",
+    fullName: "Local Business Manager",
     reviewedOn: "2026-03-31",
     maintainedBy: "Bappy Golder",
     summary:
-      "Local Task Manager v1 — standalone, self-contained browser-based task tracker. Open index.html to get started."
+      "Local Business Manager v1 — standalone, self-contained browser-based task tracker. Open index.html to get started."
   },
   tracker: {
     storageKey: "ltm-task-tracker-v1",
@@ -290,7 +290,7 @@ window.MCCProjectData = {
       path: "docs/LOCAL_PROJECT_SYSTEM.md"
     },
     {
-      title: "LTM Development Guide",
+      title: "LBM Development Guide",
       summary: "How to add features, update styles, and extend the task tracker.",
       path: "SKILL.md"
     },
