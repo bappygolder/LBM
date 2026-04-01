@@ -1,0 +1,125 @@
+/*
+ * design-tokens.css — LBM Extended Design Tokens
+ *
+ * This file ONLY adds tokens that are missing from the main :root block in styles.css.
+ * It does not override any existing variables.
+ *
+ * Imported at the top of styles.css:
+ *   @import url('design-tokens.css');
+ *
+ * See DESIGN_SKILL.md for the full token reference and usage guidelines.
+ */
+
+:root {
+
+  /* ── Extended Surface Tokens ─────────────────────────────────────────────── */
+  /* Deepest layer — for detail panel and content panes */
+  --surface-deep:    #13141f;
+  /* Floating layer — for shortcuts panel and overlays above the surface stack */
+  --surface-overlay: #1c1d28;
+
+
+  /* ── Extended Accent Tokens ──────────────────────────────────────────────── */
+  /* Accent-tinted text on dark surfaces (headings, decorative labels) */
+  --accent-light:  #c4b5fd;
+  /* Barely-there accent tint for hover backgrounds on non-interactive areas */
+  --accent-xsoft:  rgba(139, 92, 246, 0.06);
+
+
+  /* ── Extended Text Tokens ────────────────────────────────────────────────── */
+  /* Between --text (#f8f9fa) and --muted (#a1a1aa) — secondary body text */
+  --text-secondary: #d4d4d8;
+
+
+  /* ── Type Scale ──────────────────────────────────────────────────────────── */
+  /*
+   * 8-step Minor Third scale (×1.2 ratio), base = 14px / 0.875rem
+   * Use these tokens for all font-size declarations going forward.
+   * See DESIGN_SKILL.md §4 for the migration map from ad-hoc values.
+   */
+  --text-2xs:  0.625rem;   /* 10px — tiny badges, count bubbles */
+  --text-xs:   0.6875rem;  /* 11px — section labels, ALL-CAPS metadata */
+  --text-sm:   0.75rem;    /* 12px — chips, property labels, timestamps */
+  --text-base: 0.875rem;   /* 14px — body text, list items, form labels */
+  --text-md:   1rem;       /* 16px — card titles, subheadings */
+  --text-lg:   1.125rem;   /* 18px — panel section titles */
+  --text-xl:   1.25rem;    /* 20px — stat numbers, brand name */
+  --text-2xl:  1.5rem;     /* 24px — detail panel H1, page titles */
+
+
+  /* ── Spacing Scale (4px grid) ────────────────────────────────────────────── */
+  /*
+   * All spacing should be a multiple of 4px.
+   * 1px and 2px are acceptable for borders and outline offsets only.
+   * See DESIGN_SKILL.md §5 for the migration list and usage guidelines.
+   */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+
+  /* ── Radius Extensions ───────────────────────────────────────────────────── */
+  /* Extends the existing --radius-sm/md/lg set in styles.css */
+  --radius-xs:   4px;    /* inline badges, small chips, tight corners */
+  --radius-pill: 999px;  /* pill buttons, round badges */
+
+
+  /* ── Motion Tokens ───────────────────────────────────────────────────────── */
+  /*
+   * Durations and easing curves for all transitions and animations.
+   * See DESIGN_SKILL.md §7 for usage guidelines and what NOT to animate.
+   */
+  --duration-fast:   80ms;
+  --duration-normal: 150ms;
+  --duration-slow:   220ms;
+  --duration-page:   280ms;
+
+  /* Material Design standard easing — use for most position/transform changes */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Accelerate — use for exit animations (element leaving view) */
+  --ease-exit:     cubic-bezier(0.4, 0, 1, 1);
+  /* Decelerate — use for entry animations (element entering view) */
+  --ease-enter:    cubic-bezier(0, 0, 0.2, 1);
+}
+
+
+/* ── Screen Reader Utility ───────────────────────────────────────────────── */
+/*
+ * Makes content available to screen readers while hiding it visually.
+ * Use for: labels on icon-only controls, skip-to-content links, off-screen context.
+ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+/* ── Reduced Motion ──────────────────────────────────────────────────────── */
+/*
+ * Disables all animations and transitions for users who have requested
+ * reduced motion in their OS accessibility settings (WCAG 2.3.3).
+ * This block handles the entire project — do not add redundant blocks elsewhere.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

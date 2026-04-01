@@ -16,10 +16,12 @@ This is **v1** — a self-contained snapshot with sample tasks and full document
 
 ```
 Local Business Manager/
-├── CLAUDE.md              ← you are here (session bootstrap)
-├── SKILL.md               ← how to develop and extend the LBM
-├── PHASES.md              ← phase handover guide with staged prompts
-├── README.md              ← setup + usage guide
+├── CLAUDE.md                  ← you are here (session bootstrap)
+├── SKILL.md                   ← how to develop and extend the LBM
+├── SKILL_ADD_SHORTCUT.md      ← use this when adding any keyboard shortcut
+├── DESIGN_SKILL.md            ← design reference (read before any CSS/UI work)
+├── PHASES.md                  ← phase handover guide with staged prompts
+├── README.md                  ← setup + usage guide
 ├── index.html             ← main app (List + Board views)
 ├── docs.html              ← documentation viewer
 ├── resources.html         ← resource index (logos, assets)
@@ -34,6 +36,32 @@ Local Business Manager/
 └── resources/             ← design assets
     └── README.md          ← how to add/manage resources
 ```
+
+---
+
+## ADDING KEYBOARD SHORTCUTS
+
+**Always read `SKILL_ADD_SHORTCUT.md` before adding any shortcut.** Every shortcut must be registered in 5 locations:
+1. `task-app.js` — key handler logic
+2. `styles.css` — any new UI styles
+3. `index.html` — shortcuts panel row
+4. `docs/KEYBOARD_SHORTCUTS.md` — user docs
+5. `data/docs-content.js` — pre-rendered cache
+
+---
+
+## DESIGN SKILL
+
+**Read `DESIGN_SKILL.md` before doing any of the following:**
+- Writing or editing CSS in `styles.css`
+- Adding or modifying a component's HTML structure
+- Choosing colors, spacing values, font sizes, or border radii
+- Adding new animations or transitions
+- Creating a new UI pattern without an existing precedent
+
+`DESIGN_SKILL.md` is the canonical reference for all visual decisions. It documents the type scale, spacing grid, color system, component patterns, motion rules, and accessibility requirements — drawn from Linear, shadcn/ui, Material Design 3, and Apple HIG, adapted to this project.
+
+When in doubt: check the **Improvement Checklist** (Section 10) before finishing any UI work.
 
 ---
 

@@ -49,7 +49,7 @@
         </button>
       </div>
       <nav class="tabs" aria-label="Navigation">
-        <a class="tab active" href="index.html">Tasks</a>
+        <a class="tab active" href="index.html">Actions</a>
         <a class="tab" href="docs.html">Docs</a>
         <a class="tab" href="resources.html">Resources</a>
       </nav>
@@ -94,9 +94,21 @@
 
       <div class="toolbar-right">
 
-        <!-- ── Drawer: slides out from icons when one is activated ── -->
-        <div class="search-filter-bar" id="searchFilterBar">
+        <!-- ── Toolbar collapse toggle ── -->
+        <button class="icon-button toolbar-collapse-btn" id="toolbarCollapseBtn" type="button"
+          title="Hide toolbar options" aria-expanded="true">
+          <svg class="collapse-arrow-icon" width="13" height="13" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="13 17 18 12 13 7"/>
+            <polyline points="6 17 11 12 6 7"/>
+          </svg>
+        </button>
 
+        <!-- ── Collapsible icon group ── -->
+        <div class="toolbar-icon-group" id="toolbarIconGroup">
+
+        <!-- ── Search drawer (expands left) ── -->
+        <div class="search-filter-bar" id="searchFilterBar">
           <div class="bar-search-section" id="barSearchSection" hidden>
             <svg class="search-bar-icon" width="13" height="13" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -105,56 +117,73 @@
             </svg>
             <input class="search-input" id="searchInput" type="text" placeholder="Type to search…" autocomplete="off">
           </div>
-
-          <div class="bar-filter-section" id="barFilterSection" hidden>
-            <span class="bar-section-label">Filter by</span>
-            <select class="bar-filter-select" id="filterSelect">
-              <option value="all">All tasks</option>
-              <option value="active">Active only</option>
-              <option value="done">Completed / Archived</option>
-              <option value="urgent">Urgent (4+)</option>
-              <option value="recommended">Recommended</option>
-              <option value="requested">Requested</option>
-            </select>
-          </div>
-
-          <div class="bar-sort-section" id="barSortSection" hidden>
-            <span class="bar-section-label">Sort by</span>
-            <button class="bar-sort-btn" data-sort="urgency">Urgency</button>
-            <span class="bar-sort-sep">·</span>
-            <button class="bar-sort-btn" data-sort="value">Value</button>
-            <span class="bar-sort-sep">·</span>
-            <button class="bar-sort-btn" data-sort="modified">Modified</button>
-            <span class="bar-sort-sep">·</span>
-            <button class="bar-sort-btn" data-sort="manual">Manual</button>
-          </div>
-
         </div>
         <!-- ── /Drawer ── -->
+
+        <!-- Search -->
         <button class="icon-button toolbar-icon-btn" id="searchToggle" type="button"
-          title="Search" aria-expanded="false" aria-controls="searchFilterBar">
+          title="Search" aria-expanded="false">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         </button>
-        <button class="icon-button toolbar-icon-btn" id="filterToggle" type="button"
-          title="Filter" aria-expanded="false" aria-controls="searchFilterBar">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-          </svg>
-        </button>
-        <button class="icon-button toolbar-icon-btn" id="sortToggle" type="button"
-          title="Sort" aria-expanded="false" aria-controls="searchFilterBar">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="7" y1="4" x2="7" y2="20"/>
-            <polyline points="4 7 7 4 10 7"/>
-            <line x1="17" y1="20" x2="17" y2="4"/>
-            <polyline points="14 17 17 20 20 17"/>
-          </svg>
-        </button>
+
+        <!-- Filter (dropdown below) -->
+        <div class="toolbar-dropdown-wrap" id="filterWrap">
+          <button class="icon-button toolbar-icon-btn" id="filterToggle" type="button"
+            title="Filter" aria-expanded="false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+            </svg>
+          </button>
+          <div class="toolbar-dropdown" id="filterPanel" hidden role="menu">
+            <div class="toolbar-dropdown-heading">Filter</div>
+            <button class="dropdown-item" data-filter="all" role="menuitemradio">All tasks</button>
+            <button class="dropdown-item" data-filter="active" role="menuitemradio">Active only</button>
+            <button class="dropdown-item" data-filter="done" role="menuitemradio">Completed / Archived</button>
+            <button class="dropdown-item" data-filter="urgent" role="menuitemradio">Urgent (4+)</button>
+            <button class="dropdown-item" data-filter="recommended" role="menuitemradio">Recommended</button>
+            <button class="dropdown-item" data-filter="requested" role="menuitemradio">Requested</button>
+          </div>
+        </div>
+
+        <!-- Sort (dropdown below, list view only) -->
+        <div class="toolbar-dropdown-wrap" id="sortWrap">
+          <button class="icon-button toolbar-icon-btn" id="sortToggle" type="button"
+            title="Sort" aria-expanded="false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="7" y1="4" x2="7" y2="20"/>
+              <polyline points="4 7 7 4 10 7"/>
+              <line x1="17" y1="20" x2="17" y2="4"/>
+              <polyline points="14 17 17 20 20 17"/>
+            </svg>
+          </button>
+          <div class="toolbar-dropdown" id="sortPanel" hidden role="menu">
+            <div class="toolbar-dropdown-heading">Sort by</div>
+            <button class="dropdown-item" data-sort="urgency" role="menuitemradio">Urgency</button>
+            <button class="dropdown-item" data-sort="value" role="menuitemradio">Value</button>
+            <button class="dropdown-item" data-sort="modified" role="menuitemradio">Modified</button>
+            <button class="dropdown-item" data-sort="manual" role="menuitemradio">Manual order</button>
+          </div>
+        </div>
+
+        <!-- Settings (dropdown below) -->
+        <div class="toolbar-dropdown-wrap settings-wrap">
+          <button class="icon-button toolbar-icon-btn" id="settingsToggle" type="button"
+            title="Settings" aria-expanded="false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
+          <div class="toolbar-dropdown settings-popover" id="settingsPopover" hidden>
+            <!-- Populated dynamically by renderSettingsPopover() in task-app.js -->
+          </div>
+        </div>
         <div class="card-fields-wrap" style="position:relative">
           <button class="icon-button toolbar-icon-btn" id="cardFieldsBtn" type="button"
             title="Card fields" hidden aria-expanded="false">
@@ -164,14 +193,35 @@
               <circle cx="12" cy="12" r="3"/>
             </svg>
           </button>
-          <div class="card-fields-popover" id="cardFieldsPopover" hidden>
-            <div class="card-fields-heading">Show on cards</div>
-            <label class="card-field-item"><input type="checkbox" id="cfUrgency"> Urgency</label>
-            <label class="card-field-item"><input type="checkbox" id="cfNotes"> Notes preview</label>
-            <label class="card-field-item"><input type="checkbox" id="cfValue"> Value</label>
-            <label class="card-field-item"><input type="checkbox" id="cfArea"> Area</label>
+          <div class="card-fields-popover toolbar-dropdown" id="cardFieldsPopover" hidden>
+            <div class="toolbar-dropdown-heading">Show on cards</div>
+            <label class="toggle-item">
+              <span class="toggle-label">Urgency</span>
+              <span class="toggle-track" id="cfUrgency" role="switch" aria-checked="false" tabindex="0">
+                <span class="toggle-thumb"></span>
+              </span>
+            </label>
+            <label class="toggle-item">
+              <span class="toggle-label">Notes preview</span>
+              <span class="toggle-track" id="cfNotes" role="switch" aria-checked="false" tabindex="0">
+                <span class="toggle-thumb"></span>
+              </span>
+            </label>
+            <label class="toggle-item">
+              <span class="toggle-label">Value</span>
+              <span class="toggle-track" id="cfValue" role="switch" aria-checked="false" tabindex="0">
+                <span class="toggle-thumb"></span>
+              </span>
+            </label>
+            <label class="toggle-item">
+              <span class="toggle-label">Area</span>
+              <span class="toggle-track" id="cfArea" role="switch" aria-checked="false" tabindex="0">
+                <span class="toggle-thumb"></span>
+              </span>
+            </label>
           </div>
         </div>
+        </div><!-- /.toolbar-icon-group -->
         <div class="new-btn-wrap">
           <button class="primary toolbar-add-btn" id="openCreateButton" type="button">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -406,6 +456,78 @@
       </form>
     </div>
   </div>
+
+  <!-- ── Keyboard shortcuts panel ─────────────────────────────────────────────── -->
+  <button class="shortcuts-fab" id="shortcutsFab" type="button"
+    aria-label="Keyboard shortcuts" data-tooltip="Keyboard shortcuts  ?">
+    <span class="shortcuts-fab-glyph" aria-hidden="true">?</span>
+  </button>
+
+  <div class="shortcuts-panel" id="shortcutsPanel" hidden aria-modal="true" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="shortcuts-panel-header">
+      <h2 class="shortcuts-panel-title">Keyboard Shortcuts</h2>
+      <button class="icon-button shortcuts-panel-close" id="shortcutsPanelClose" type="button" aria-label="Close">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="shortcuts-panel-body">
+
+      <div class="shortcuts-group">
+        <div class="shortcuts-group-title shortcuts-group-title--purple">Quick Access</div>
+        <div class="shortcuts-row"><kbd>N</kbd><span>New item</span></div>
+        <div class="shortcuts-row"><kbd>Ctrl</kbd><kbd>N</kbd><span>New item (works in fields)</span></div>
+        <div class="shortcuts-row"><kbd>/</kbd><span>Search</span></div>
+        <div class="shortcuts-row"><kbd>?</kbd><span>Toggle shortcuts panel</span></div>
+        <div class="shortcuts-row"><kbd>Esc</kbd><span>Dismiss / close anything</span></div>
+        <div class="shortcuts-row"><kbd>Cmd</kbd><kbd>Z</kbd><span>Undo (delete · lane change · title edit)</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcuts-group-title shortcuts-group-title--blue">List — Navigate &amp; Select</div>
+        <div class="shortcuts-row"><kbd>↓</kbd><span>Focus next task</span></div>
+        <div class="shortcuts-row"><kbd>↑</kbd><span>Focus previous task</span></div>
+        <div class="shortcuts-row"><kbd>Enter</kbd><span>Open focused task</span></div>
+        <div class="shortcuts-row"><kbd>Shift</kbd><kbd>↓</kbd><span>Scroll down</span></div>
+        <div class="shortcuts-row"><kbd>Shift</kbd><kbd>↑</kbd><span>Scroll up</span></div>
+        <div class="shortcuts-row"><kbd>Esc</kbd><span>Clear selection</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcuts-group-title shortcuts-group-title--amber">List — Task Actions</div>
+        <div class="shortcuts-row"><kbd>D</kbd><span>Delete focused task (Cmd+Z to undo)</span></div>
+        <div class="shortcuts-row"><kbd>←</kbd><span>Restore deleted position</span></div>
+        <div class="shortcuts-row"><kbd>→</kbd><span>Restore deleted position</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcuts-group-title shortcuts-group-title--green">Detail Panel</div>
+        <div class="shortcuts-row"><kbd>D</kbd><span>Delete this task (Cmd+Z to undo)</span></div>
+        <div class="shortcuts-row"><kbd>Esc</kbd><span>Close panel</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcuts-group-title shortcuts-group-title--pink">Notes Editor</div>
+        <div class="shortcuts-row"><kbd>Cmd</kbd><kbd>B</kbd><span>Bold</span></div>
+        <div class="shortcuts-row"><kbd>Cmd</kbd><kbd>I</kbd><span>Italic</span></div>
+        <div class="shortcuts-row"><kbd>Cmd</kbd><kbd>Shift</kbd><kbd>8</kbd><span>Bullet list</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcuts-group-title shortcuts-group-title--yellow">Board View</div>
+        <div class="shortcuts-row"><kbd>Enter</kbd><span>Save new task</span></div>
+        <div class="shortcuts-row"><kbd>Esc</kbd><span>Cancel inline form</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Transparent click-guard: sits above content, below toolbar dropdowns.
+       Shown whenever a toolbar panel or shortcuts panel is open — prevents
+       clicks from reaching list rows / board cards while any panel is open. -->
+  <div id="panelBackdrop" class="panel-backdrop" hidden></div>
 
 </body>
 </html>

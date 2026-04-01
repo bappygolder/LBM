@@ -68,7 +68,8 @@
   let collapsedCols  = []; // [colKey, ...] — collapsed in board view
   let activeView     = "list";
   let hiddenExpanded = false;
-  let activeBarMode  = null; // null | "search" | "filter" | "sort"
+  let activeBarMode = null; // null | "search"
+  let activeFilter  = "all"; // "all" | "active" | "done" | "urgent" | "recommended" | "requested"
 
   let editingId         = null; // task being edited in the modal
   let detailTaskId      = null; // task shown in detail panel
@@ -87,6 +88,12 @@
   // Manual sort order for list view — array of task IDs (active tasks only)
   let listManualOrder = [];
 
+  // List view property display order — "name" marks title position; chips go before/after
+  let listPropOrder = ["name", "urgency", "value", "area"];
+
+  // Key of the settings prop row currently being dragged
+  let settingsDragKey = null;
+
   // List view drag state
   let listDragTaskId = null;
   let listDragOverId = null;
@@ -99,6 +106,13 @@
   const DEFAULT_CARD_PROPS = { urgency: true, notes: true, value: false, area: false };
   let cardVisibleProps = { ...DEFAULT_CARD_PROPS };
 
+  // Which properties to show on list rows (and in the inline new form)
+  const DEFAULT_LIST_PROPS = { urgency: false, value: false, area: false };
+  let listVisibleProps = { ...DEFAULT_LIST_PROPS };
+
+  // Whether the toolbar icon group is collapsed
+  let toolbarCollapsed = false;
+
   // Property display order and custom labels
   const DEFAULT_PROP_ORDER  = ["stage", "urgency", "value", "area", "modified"];
   const DEFAULT_PROP_LABELS = { stage: "Stage", urgency: "Urgency", value: "Value", area: "Area", modified: "Modified" };
@@ -106,6 +120,11 @@
   let propLabels       = { ...DEFAULT_PROP_LABELS };
   let propDragSrcIdx   = null; // index of property row being dragged
   let propsCollapsed   = false; // whether the properties section is collapsed
+  let lastDeletedRowIndex = -1; // index of last deleted row in the list, for ←/→ navigation
+
+  // Undo stack — in-memory only, cleared on page reload
+  const UNDO_LIMIT = 30;
+  let undoStack = []; // [{ type, ...payload }]
 
   /* ── Element references ────────────────────────────────────────────────────── */
 
@@ -129,10 +148,11 @@
     sortToggle:         document.getElementById("sortToggle"),
     searchFilterBar:    document.getElementById("searchFilterBar"),
     barSearchSection:   document.getElementById("barSearchSection"),
-    barFilterSection:   document.getElementById("barFilterSection"),
-    barSortSection:     document.getElementById("barSortSection"),
     searchInput:        document.getElementById("searchInput"),
-    filterSelect:       document.getElementById("filterSelect"),
+    filterWrap:         document.getElementById("filterWrap"),
+    filterPanel:        document.getElementById("filterPanel"),
+    sortWrap:           document.getElementById("sortWrap"),
+    sortPanel:          document.getElementById("sortPanel"),
     openCreateButton:   document.getElementById("openCreateButton"),
 
     taskList:           document.getElementById("taskList"),
@@ -162,13 +182,17 @@
     detailModeCenter:   document.getElementById("detailModeCenter"),
     detailModeFull:     document.getElementById("detailModeFull"),
 
-    // Card fields popover
+    // Card fields standalone button (merged into settings popover — kept for DOM ref only)
     cardFieldsBtn:      document.getElementById("cardFieldsBtn"),
     cardFieldsPopover:  document.getElementById("cardFieldsPopover"),
-    cfUrgency:          document.getElementById("cfUrgency"),
-    cfNotes:            document.getElementById("cfNotes"),
-    cfValue:            document.getElementById("cfValue"),
-    cfArea:             document.getElementById("cfArea"),
+
+    // Settings popover
+    settingsToggle:     document.getElementById("settingsToggle"),
+    settingsPopover:    document.getElementById("settingsPopover"),
+
+    // Toolbar collapse
+    toolbarCollapseBtn: document.getElementById("toolbarCollapseBtn"),
+    toolbarIconGroup:   document.getElementById("toolbarIconGroup"),
 
     // Column menu
     colMenu:            document.getElementById("colMenu"),
@@ -206,7 +230,15 @@
     taskSource:         document.getElementById("taskSource"),
     taskNotes:          document.getElementById("taskNotes"),
     submitButton:       document.getElementById("submitButton"),
-    cancelEditButton:   document.getElementById("cancelEditButton")
+    cancelEditButton:   document.getElementById("cancelEditButton"),
+
+    // Shortcuts panel
+    shortcutsFab:        document.getElementById("shortcutsFab"),
+    shortcutsPanel:      document.getElementById("shortcutsPanel"),
+    shortcutsPanelClose: document.getElementById("shortcutsPanelClose"),
+
+    // Click-guard backdrop (shown while any toolbar panel is open)
+    panelBackdrop:       document.getElementById("panelBackdrop")
   };
 
   /* ── Boot ───────────────────────────────────────────────────────────────────── */
@@ -220,11 +252,15 @@
     hiddenExpanded = Boolean(state.ui.hiddenExpanded);
     detailMode     = state.ui.detailMode   || "side";
     if (state.ui.cardVisibleProps) cardVisibleProps = Object.assign({}, DEFAULT_CARD_PROPS, state.ui.cardVisibleProps);
+    if (state.ui.listVisibleProps) listVisibleProps = Object.assign({}, DEFAULT_LIST_PROPS, state.ui.listVisibleProps);
+    if (state.ui.activeFilter) activeFilter = state.ui.activeFilter;
+    if (state.ui.toolbarCollapsed !== undefined) toolbarCollapsed = Boolean(state.ui.toolbarCollapsed);
     if (Array.isArray(state.ui.detailPropOrder)) detailPropOrder = state.ui.detailPropOrder;
     if (state.ui.propLabels) propLabels = Object.assign({}, DEFAULT_PROP_LABELS, state.ui.propLabels);
     if (state.ui.propsCollapsed !== undefined) propsCollapsed = Boolean(state.ui.propsCollapsed);
     if (state.ui.listSort) listSort = state.ui.listSort;
     if (Array.isArray(state.ui.listManualOrder)) listManualOrder = state.ui.listManualOrder;
+    if (Array.isArray(state.ui.listPropOrder) && state.ui.listPropOrder.includes("name")) listPropOrder = state.ui.listPropOrder;
 
     // Re-register any custom lane keys saved in boardColumns so list view and
     // normalizeLane() can find them after a page reload.
@@ -297,11 +333,15 @@
         hiddenExpanded,
         detailMode,
         cardVisibleProps,
+        listVisibleProps,
+        activeFilter,
+        toolbarCollapsed,
         detailPropOrder,
         propLabels,
         propsCollapsed,
         listSort,
-        listManualOrder
+        listManualOrder,
+        listPropOrder
       },
       savedAt: new Date().toISOString()
     }));
@@ -357,19 +397,31 @@
     el.listViewButton.addEventListener("click", () => setView("list"));
     el.boardViewButton.addEventListener("click", () => setView("board"));
 
-    // Search / filter / sort toggle
+    // Search toggle (expands drawer left)
     el.searchToggle.addEventListener("click", () => toggleSearch());
-    el.filterToggle.addEventListener("click", () => toggleFilter());
-    el.sortToggle.addEventListener("click", () => toggleSort());
     el.searchInput.addEventListener("input", render);
-    el.filterSelect.addEventListener("change", render);
 
-    // Bar sort buttons
-    el.barSortSection.addEventListener("click", e => {
+    // Filter panel (dropdown below)
+    el.filterToggle.addEventListener("click", e => { e.stopPropagation(); toggleFilterPanel(); });
+    el.filterPanel.addEventListener("click", e => {
+      const btn = e.target.closest("[data-filter]");
+      if (!btn) return;
+      activeFilter = btn.dataset.filter;
+      writeState();
+      syncFilterPanel();
+      closeFilterPanel();
+      render();
+    });
+
+    // Sort panel (dropdown below, list view only)
+    el.sortToggle.addEventListener("click", e => { e.stopPropagation(); toggleSortPanel(); });
+    el.sortPanel.addEventListener("click", e => {
       const btn = e.target.closest("[data-sort]");
       if (!btn) return;
       listSort = btn.dataset.sort;
       writeState();
+      syncSortPanel();
+      closeSortPanel();
       render();
     });
 
@@ -397,7 +449,7 @@
     });
     el.detailDeleteBtn.addEventListener("click", () => {
       const t = getTask(detailTaskId);
-      if (t && confirm("Delete this task?")) { deleteTask(t.id); closeDetail(); }
+      if (t) confirmDelete(() => { deleteTask(t.id); closeDetail(); });
     });
 
     // Properties section collapse toggle
@@ -454,18 +506,23 @@
       closeColMenu();
     });
 
-    // Card fields popover
-    el.cardFieldsBtn.addEventListener("click", e => {
+    // Settings popover — dynamically rendered on open (both views)
+    el.settingsToggle.addEventListener("click", e => {
       e.stopPropagation();
-      const open = !el.cardFieldsPopover.hidden;
-      el.cardFieldsPopover.hidden = open;
-      el.cardFieldsBtn.setAttribute("aria-expanded", String(!open));
-      el.cardFieldsBtn.classList.toggle("is-active", !open);
+      const opening = el.settingsPopover.hidden; // true = we are about to open it
+      if (opening) { closeFilterPanel(); closeSortPanel(); renderSettingsPopover(); }
+      el.settingsPopover.hidden = !opening;
+      el.settingsToggle.setAttribute("aria-expanded", String(opening));
+      el.settingsToggle.classList.toggle("is-active", opening);
+      updateBackdrop();
     });
-    el.cfUrgency.addEventListener("change", () => { cardVisibleProps.urgency = el.cfUrgency.checked; writeState(); renderBoardView(filteredTasks()); });
-    el.cfNotes.addEventListener("change",   () => { cardVisibleProps.notes   = el.cfNotes.checked;   writeState(); renderBoardView(filteredTasks()); });
-    el.cfValue.addEventListener("change",   () => { cardVisibleProps.value   = el.cfValue.checked;   writeState(); renderBoardView(filteredTasks()); });
-    el.cfArea.addEventListener("change",    () => { cardVisibleProps.area    = el.cfArea.checked;    writeState(); renderBoardView(filteredTasks()); });
+
+    // Toolbar collapse toggle
+    el.toolbarCollapseBtn.addEventListener("click", () => {
+      toolbarCollapsed = !toolbarCollapsed;
+      applyToolbarCollapse();
+      writeState();
+    });
 
     // Rename modal
     el.renameModalClose.addEventListener("click", closeRenameModal);
@@ -507,27 +564,171 @@
       if (!el.colMenu.contains(e.target) && !e.target.closest(".board-col-menu-btn")) {
         closeColMenu();
       }
-      if (!el.cardFieldsPopover.contains(e.target) && e.target !== el.cardFieldsBtn && !el.cardFieldsBtn.contains(e.target)) {
-        el.cardFieldsPopover.hidden = true;
-        el.cardFieldsBtn.classList.remove("is-active");
-        el.cardFieldsBtn.setAttribute("aria-expanded", "false");
+      if (!el.settingsPopover.contains(e.target) && !el.settingsToggle.contains(e.target)) {
+        closeSettingsPanel();
+      }
+      if (!el.filterPanel.contains(e.target) && !el.filterToggle.contains(e.target)) {
+        closeFilterPanel();
+      }
+      if (!el.sortPanel.contains(e.target) && !el.sortToggle.contains(e.target)) {
+        closeSortPanel();
+      }
+      if (!el.shortcutsPanel.hidden &&
+          !el.shortcutsPanel.contains(e.target) &&
+          !el.shortcutsFab.contains(e.target)) {
+        closeShortcutsPanel();
       }
     });
+
+    // Panel backdrop — closes all open panels and swallows the click so it
+    // does not fall through to task rows / board cards underneath
+    el.panelBackdrop.addEventListener("click", e => {
+      e.stopPropagation();
+      closeSettingsPanel();
+      closeFilterPanel();
+      closeSortPanel();
+      closeShortcutsPanel();
+    });
+
+    // Shortcuts panel
+    el.shortcutsFab.addEventListener("click", toggleShortcutsPanel);
+    el.shortcutsPanelClose.addEventListener("click", closeShortcutsPanel);
+
+    // Close shortcuts panel on click outside — use capture so stopPropagation
+    // on list rows / board cards doesn't block this from firing
+    document.addEventListener("click", e => {
+      if (!el.shortcutsPanel.hidden &&
+          !el.shortcutsPanel.contains(e.target) &&
+          !el.shortcutsFab.contains(e.target)) {
+        closeShortcutsPanel();
+      }
+    }, true);
 
     // Global keyboard shortcuts
     document.addEventListener("keydown", e => {
       if (e.key === "Escape") {
-        if (!el.taskModal.hidden)   { closeTaskModal(); return; }
-        if (!el.renameModal.hidden) { closeRenameModal(); return; }
-        if (!el.addColModal.hidden) { closeAddColModal(); return; }
-        if (!el.detailOverlay.hidden) { closeDetail(); return; }
+        // Delete confirm dialog (belt-and-suspenders alongside its own inner handler)
+        const deleteOverlay = document.querySelector(".delete-confirm-overlay");
+        if (deleteOverlay)              { deleteOverlay.remove(); return; }
+        // Modals
+        if (!el.shortcutsPanel.hidden) { closeShortcutsPanel(); return; }
+        if (!el.taskModal.hidden)      { closeTaskModal(); return; }
+        if (!el.renameModal.hidden)    { closeRenameModal(); return; }
+        if (!el.addColModal.hidden)    { closeAddColModal(); return; }
+        if (!el.detailOverlay.hidden)  { closeDetail(); return; }
+        // Toolbar popovers and panels
+        if (!el.filterPanel.hidden)    { closeFilterPanel(); return; }
+        if (!el.sortPanel.hidden)      { closeSortPanel(); return; }
+        if (!el.settingsPopover.hidden) { closeSettingsPanel(); return; }
+        if (!el.cardFieldsPopover.hidden) {
+          el.cardFieldsPopover.hidden = true;
+          el.cardFieldsBtn.classList.remove("is-active");
+          el.cardFieldsBtn.setAttribute("aria-expanded", "false");
+          return;
+        }
+        if (!el.colMenu.hidden) { closeColMenu(); return; }
+        // Search / bar drawer
+        if (activeBarMode !== null) { setBarMode(activeBarMode); return; }
+        // List row focus
+        const focused = document.querySelector(".list-row.is-focused");
+        if (focused) { focused.classList.remove("is-focused"); return; }
       }
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === "n") { e.preventDefault(); openTaskModal(null); return; }
       const tag = document.activeElement.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable) return;
-      if (e.key === "n" || e.key === "N") openTaskModal(null);
-      if (e.key === "/") { e.preventDefault(); toggleSearch(true); }
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === "z") { e.preventDefault(); performUndo(); return; }
+      if (e.key === "n" || e.key === "N") { e.preventDefault(); openTaskModal(null); return; }
+      if (e.key === "?")                  { e.preventDefault(); toggleShortcutsPanel(); return; }
+      if (e.key === "/") { e.preventDefault(); toggleSearch(true); return; }
+      if (e.shiftKey && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+        e.preventDefault();
+        window.scrollBy({ top: e.key === "ArrowDown" ? 120 : -120, behavior: "smooth" });
+        return;
+      }
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); navigateListRows(e.key === "ArrowDown" ? 1 : -1); }
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        if (activeView !== "list") return;
+        if (!el.detailOverlay.hidden) return;
+        if (document.querySelector(".delete-confirm-overlay")) return;
+        e.preventDefault();
+        selectAtDeletedPosition();
+        return;
+      }
+      if (e.key === "d" || e.key === "D") {
+        if (!el.detailOverlay.hidden && detailTaskId) {
+          e.preventDefault();
+          const t = getTask(detailTaskId);
+          if (t) {
+            const rows = [...el.taskList.querySelectorAll(".list-row[data-task-id]")];
+            lastDeletedRowIndex = rows.findIndex(r => r.dataset.taskId === t.id);
+            confirmDelete(() => { deleteTask(t.id); closeDetail(); });
+          }
+          return;
+        }
+        const focused = document.querySelector(".list-row.is-focused");
+        if (focused && focused.dataset.taskId) {
+          e.preventDefault();
+          const tid = focused.dataset.taskId;
+          const rows = [...el.taskList.querySelectorAll(".list-row[data-task-id]")];
+          lastDeletedRowIndex = rows.indexOf(focused);
+          focused.classList.remove("is-focused");
+          confirmDelete(() => deleteTask(tid));
+        }
+      }
     });
+  }
+
+  /* ── List keyboard navigation ───────────────────────────────────────────────── */
+
+  function navigateListRows(direction) {
+    if (activeView !== "list") return;
+    const rows = [...el.taskList.querySelectorAll(".list-row[data-task-id]")];
+    if (!rows.length) return;
+
+    const focused = document.querySelector(".list-row.is-focused");
+    let nextIdx;
+
+    if (!focused) {
+      nextIdx = direction === 1 ? 0 : rows.length - 1;
+    } else {
+      const curr = rows.indexOf(focused);
+      nextIdx = curr + direction;
+      if (nextIdx < 0) nextIdx = 0;
+      if (nextIdx >= rows.length) nextIdx = rows.length - 1;
+      focused.classList.remove("is-focused");
+    }
+
+    const next = rows[nextIdx];
+    next.classList.add("is-focused");
+    scrollRowIntoView(next);
+
+    // Enter opens the detail panel for the focused row
+    const handleEnter = e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        document.removeEventListener("keydown", handleEnter);
+        next.classList.remove("is-focused");
+        openDetail(next.dataset.taskId);
+      }
+      if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Escape") {
+        document.removeEventListener("keydown", handleEnter);
+        if (e.key === "Escape") next.classList.remove("is-focused");
+      }
+    };
+    document.addEventListener("keydown", handleEnter);
+  }
+
+  /* ── Jump to last-deleted position ─────────────────────────────────────────── */
+
+  function selectAtDeletedPosition() {
+    if (activeView !== "list" || lastDeletedRowIndex < 0) return;
+    const rows = [...el.taskList.querySelectorAll(".list-row[data-task-id]")];
+    if (!rows.length) return;
+    const idx = Math.min(lastDeletedRowIndex, rows.length - 1);
+    const row = rows[idx];
+    document.querySelectorAll(".list-row.is-focused").forEach(r => r.classList.remove("is-focused"));
+    row.classList.add("is-focused");
+    scrollRowIntoView(row);
   }
 
   /* ── Views ──────────────────────────────────────────────────────────────────── */
@@ -547,54 +748,141 @@
     el.boardViewButton.classList.toggle("active", !isList);
     el.listViewButton.setAttribute("aria-selected", String(isList));
     el.boardViewButton.setAttribute("aria-selected", String(!isList));
-    // Card fields button only shows in board view
-    el.cardFieldsBtn.hidden = isList;
-    // Sort toggle only makes sense in list view
-    el.sortToggle.hidden = !isList;
-    // If we switch to board view while in sort mode, close the bar
-    if (!isList && activeBarMode === "sort") setBarMode(null);
-    // Sync checkbox state
-    el.cfUrgency.checked = cardVisibleProps.urgency;
-    el.cfNotes.checked   = cardVisibleProps.notes;
-    el.cfValue.checked   = cardVisibleProps.value;
-    el.cfArea.checked    = cardVisibleProps.area;
+    // Card fields standalone button is merged into settings — always hidden
+    el.cardFieldsBtn.hidden = true;
+    // Sync filter and sort panels (visible in both views)
+    syncFilterPanel();
+    syncSortPanel();
+    // Apply toolbar collapse state
+    applyToolbarCollapse();
+  }
+
+  function applyToolbarCollapse() {
+    el.toolbarIconGroup.classList.toggle("is-collapsed", toolbarCollapsed);
+    el.toolbarCollapseBtn.setAttribute("aria-expanded", String(!toolbarCollapsed));
+    el.toolbarCollapseBtn.title = toolbarCollapsed ? "Show toolbar options" : "Hide toolbar options";
+    // Close any open panel when collapsing
+    if (toolbarCollapsed) {
+      setBarMode(null);
+      closeFilterPanel();
+      closeSortPanel();
+      el.settingsPopover.hidden = true;
+      el.settingsToggle.classList.remove("is-active");
+    }
   }
 
   /* ── Search / filter / sort bar ─────────────────────────────────────────────── */
 
+  /* ── Search bar (drawer that expands left) ─────────────────────────────────── */
+
   function setBarMode(mode) {
-    // Toggle off if clicking the already-active mode
     activeBarMode = (activeBarMode === mode) ? null : mode;
-
-    const open = activeBarMode !== null;
+    const open = activeBarMode === "search";
     el.searchFilterBar.classList.toggle("is-open", open);
-    el.barSearchSection.hidden   = activeBarMode !== "search";
-    el.barFilterSection.hidden   = activeBarMode !== "filter";
-    el.barSortSection.hidden     = activeBarMode !== "sort";
-
-    el.searchToggle.classList.toggle("is-active", activeBarMode === "search");
-    el.filterToggle.classList.toggle("is-active", activeBarMode === "filter");
-    el.sortToggle.classList.toggle("is-active",   activeBarMode === "sort");
-
-    el.searchToggle.setAttribute("aria-expanded", String(activeBarMode === "search"));
-    el.filterToggle.setAttribute("aria-expanded", String(activeBarMode === "filter"));
-    el.sortToggle.setAttribute("aria-expanded",   String(activeBarMode === "sort"));
-
-    if (activeBarMode === "search") el.searchInput.focus();
-    if (activeBarMode === "sort")   syncBarSortBtns();
+    el.barSearchSection.hidden = !open;
+    el.searchToggle.classList.toggle("is-active", open);
+    el.searchToggle.setAttribute("aria-expanded", String(open));
+    if (open) el.searchInput.focus();
   }
 
   function toggleSearch(forceOpen) {
     if (forceOpen === true && activeBarMode !== "search") { setBarMode("search"); return; }
     setBarMode("search");
   }
-  function toggleFilter() { setBarMode("filter"); }
-  function toggleSort()   { setBarMode("sort"); }
+
+  /* ── Filter panel (dropdown below icon) ─────────────────────────────────────── */
+
+  /* Shows the backdrop and disables task-content pointer events whenever any
+     toolbar panel / shortcuts panel is open. Must be called after any open/close change. */
+  function updateBackdrop() {
+    const anyOpen = !el.settingsPopover.hidden || !el.filterPanel.hidden ||
+                    !el.sortPanel.hidden       || !el.shortcutsPanel.hidden;
+    el.panelBackdrop.hidden = !anyOpen;
+    // Block accidental task clicks via pointer-events instead of z-index layering
+    el.listView.classList.toggle("panels-open", anyOpen);
+    el.boardView.classList.toggle("panels-open", anyOpen);
+  }
+
+  function closeSettingsPanel() {
+    el.settingsPopover.hidden = true;
+    el.settingsToggle.classList.remove("is-active");
+    el.settingsToggle.setAttribute("aria-expanded", "false");
+    updateBackdrop();
+  }
+
+  function toggleFilterPanel() {
+    const opening = el.filterPanel.hidden;
+    if (opening) { closeSortPanel(); closeSettingsPanel(); syncFilterPanel(); }
+    el.filterPanel.hidden = !opening;
+    el.filterToggle.classList.toggle("is-active", opening);
+    el.filterToggle.setAttribute("aria-expanded", String(opening));
+    updateBackdrop();
+  }
+
+  function closeFilterPanel() {
+    el.filterPanel.hidden = true;
+    el.filterToggle.classList.remove("is-active");
+    el.filterToggle.setAttribute("aria-expanded", "false");
+    updateBackdrop();
+  }
+
+  function syncFilterPanel() {
+    el.filterPanel.querySelectorAll("[data-filter]").forEach(btn => {
+      const active = btn.dataset.filter === activeFilter;
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-checked", String(active));
+    });
+    // Show active indicator on the icon when filter is non-default
+    el.filterToggle.classList.toggle("has-value", activeFilter !== "all");
+  }
+
+  /* ── Sort panel (dropdown below icon, list view only) ───────────────────────── */
+
+  function toggleSortPanel() {
+    const opening = el.sortPanel.hidden;
+    if (opening) { closeFilterPanel(); closeSettingsPanel(); syncSortPanel(); }
+    el.sortPanel.hidden = !opening;
+    el.sortToggle.classList.toggle("is-active", opening);
+    el.sortToggle.setAttribute("aria-expanded", String(opening));
+    updateBackdrop();
+  }
+
+  function closeSortPanel() {
+    el.sortPanel.hidden = true;
+    el.sortToggle.classList.remove("is-active");
+    el.sortToggle.setAttribute("aria-expanded", "false");
+    updateBackdrop();
+  }
+
+  /* ── Shortcuts panel ────────────────────────────────────────────────────────── */
+
+  function toggleShortcutsPanel() {
+    el.shortcutsPanel.hidden ? openShortcutsPanel() : closeShortcutsPanel();
+  }
+
+  function openShortcutsPanel() {
+    el.shortcutsPanel.hidden = false;
+    el.shortcutsFab.classList.add("is-active");
+    updateBackdrop();
+  }
+
+  function closeShortcutsPanel() {
+    el.shortcutsPanel.hidden = true;
+    el.shortcutsFab.classList.remove("is-active");
+    updateBackdrop();
+  }
+
+  function syncSortPanel() {
+    el.sortPanel.querySelectorAll("[data-sort]").forEach(btn => {
+      const active = btn.dataset.sort === listSort;
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-checked", String(active));
+    });
+  }
 
   function syncBarSortBtns() {
-    el.barSortSection.querySelectorAll("[data-sort]").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.sort === listSort);
-    });
+    // Kept for compatibility — syncs the sort panel
+    syncSortPanel();
   }
 
   /* ── Info panel ─────────────────────────────────────────────────────────────── */
@@ -603,6 +891,9 @@
     const nextHidden = !el.infoDrawer.hidden;
     el.infoDrawer.hidden = nextHidden;
     el.toggleInfoButton.setAttribute("aria-expanded", String(!nextHidden));
+    if (!nextHidden) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   /* ── Render pipeline ────────────────────────────────────────────────────────── */
@@ -642,7 +933,7 @@
 
   function filteredTasks() {
     const search = el.searchInput ? el.searchInput.value.trim().toLowerCase() : "";
-    const filter = el.filterSelect ? el.filterSelect.value : "all";
+    const filter = activeFilter || "all";
 
     return tasks.filter(t => {
       if (search) {
@@ -760,19 +1051,91 @@
     dot.className = `list-urgency u-${task.urgency}`;
     dot.title = `Urgency ${task.urgency} / 5`;
 
-    // Content
+    // Content — built in listPropOrder sequence so chips appear above/below the title
     const content = document.createElement("div");
     content.className = "list-content";
 
     const title = document.createElement("h3");
     title.className = "list-title";
     title.textContent = task.title;
-    content.appendChild(title);
 
-    // Lane pill
-    const lane = document.createElement("span");
-    lane.className = "list-lane";
-    lane.textContent = LANE_LABELS[task.lane] || task.lane;
+    // Click on title: inline edit; propagation stopped so row click doesn't fire
+    title.addEventListener("click", e => {
+      e.stopPropagation();
+      if (content.querySelector(".list-title-input")) return; // already editing
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "list-title-input";
+      input.value = task.title;
+      const originalTitle = task.title;
+      title.style.display = "none";
+      content.insertBefore(input, title);
+      input.focus();
+      input.select();
+      function commitTitle() {
+        const v = input.value.trim();
+        if (v && v !== originalTitle) {
+          pushUndo({ type: "title-edit", taskId: task.id, fromTitle: originalTitle, toTitle: v });
+          tasks = tasks.map(t => t.id === task.id ? { ...t, title: v, lastModified: today() } : t);
+          task = getTask(task.id) || task;
+          writeState();
+          title.textContent = v;
+        }
+        input.remove();
+        title.style.display = "";
+      }
+      function revertTitle() {
+        input.remove();
+        title.style.display = "";
+      }
+      input.addEventListener("blur", commitTitle);
+      input.addEventListener("keydown", ke => {
+        if (ke.key === "Enter") { ke.preventDefault(); input.blur(); }
+        if (ke.key === "Escape") { ke.preventDefault(); input.removeEventListener("blur", commitTitle); revertTitle(); }
+      });
+    });
+
+    // Build a chip element for a given prop key (returns null if disabled/empty)
+    function buildPropChip(k) {
+      if (k === "urgency" && listVisibleProps.urgency) {
+        const c = document.createElement("span");
+        c.className = `list-prop-chip list-prop-urgency u-chip-${task.urgency}`;
+        c.textContent = `Urgency ${task.urgency}`;
+        return c;
+      }
+      if (k === "value" && listVisibleProps.value && task.value) {
+        const c = document.createElement("span");
+        c.className = "list-prop-chip list-prop-value";
+        c.textContent = `$${Number(task.value).toLocaleString()}`;
+        return c;
+      }
+      if (k === "area" && listVisibleProps.area && task.area) {
+        const c = document.createElement("span");
+        c.className = "list-prop-chip list-prop-area";
+        c.textContent = task.area.replace(/-/g, " ");
+        return c;
+      }
+      return null;
+    }
+
+    // Chips before "name" → above title; chips after "name" → below title
+    const nameIdx = listPropOrder.indexOf("name");
+    const aboveChips = listPropOrder.slice(0, nameIdx).map(buildPropChip).filter(Boolean);
+    const belowChips = listPropOrder.slice(nameIdx + 1).map(buildPropChip).filter(Boolean);
+
+    if (aboveChips.length) {
+      const row = document.createElement("div");
+      row.className = "list-prop-row list-prop-row--above";
+      aboveChips.forEach(c => row.appendChild(c));
+      content.appendChild(row);
+    }
+    content.appendChild(title);
+    if (belowChips.length) {
+      const row = document.createElement("div");
+      row.className = "list-prop-row";
+      belowChips.forEach(c => row.appendChild(c));
+      content.appendChild(row);
+    }
 
     // Hover tools
     const tools = document.createElement("div");
@@ -788,18 +1151,17 @@
       moveTask(task.id, nextLane);
     });
 
-    tools.appendChild(makeIconBtn("Edit", pencilIcon(), e => {
+    tools.appendChild(makeIconBtn("Open", pencilIcon(), e => {
       e.stopPropagation();
-      openTaskModal(task);
+      openDetail(task.id);
     }));
     tools.appendChild(doneBtn);
 
     row.appendChild(dot);
     row.appendChild(content);
-    row.appendChild(lane);
     row.appendChild(tools);
 
-    // Click anywhere on row opens detail
+    // Click anywhere on row (except title) opens detail panel
     row.addEventListener("click", () => openDetail(task.id));
 
     return row;
@@ -1084,7 +1446,7 @@
     }));
     tools.appendChild(makeIconBtn("Delete task", trashIcon(), e => {
       e.stopPropagation();
-      if (confirm("Delete this task?")) deleteTask(task.id);
+      confirmDelete(() => deleteTask(task.id));
     }));
 
     top.appendChild(topLeft);
@@ -1529,6 +1891,7 @@
     if (!t) return;
     const newTitle = (el.detailTitle.textContent || "").trim();
     if (!newTitle || newTitle === t.title) return;
+    pushUndo({ type: "title-edit", taskId: detailTaskId, fromTitle: t.title, toTitle: newTitle });
     tasks = tasks.map(x =>
       x.id === detailTaskId ? Object.assign({}, x, { title: newTitle, lastModified: today() }) : x
     );
@@ -1573,6 +1936,154 @@
     return div.innerHTML;
   }
 
+  /* ── Settings popover (dynamic, drag-to-reorder list props) ────────────────── */
+
+  function renderSettingsPopover() {
+    const pop = el.settingsPopover;
+    pop.innerHTML = "";
+
+    if (activeView === "list") {
+      // ── List view: show draggable property order + visibility ──
+      const h = document.createElement("div");
+      h.className = "toolbar-dropdown-heading";
+      h.textContent = "Properties";
+      pop.appendChild(h);
+      listPropOrder.forEach(key => pop.appendChild(buildSettingsPropRow(key)));
+    } else {
+      // ── Board view: show card field visibility ──
+      const h = document.createElement("div");
+      h.className = "toolbar-dropdown-heading";
+      h.textContent = "Card fields";
+      pop.appendChild(h);
+      [
+        ["urgency", "Urgency",       () => cardVisibleProps.urgency, v => { cardVisibleProps.urgency = v; }],
+        ["notes",   "Notes preview", () => cardVisibleProps.notes,   v => { cardVisibleProps.notes   = v; }],
+        ["value",   "Value",         () => cardVisibleProps.value,   v => { cardVisibleProps.value   = v; }],
+        ["area",    "Area",          () => cardVisibleProps.area,    v => { cardVisibleProps.area    = v; }],
+      ].forEach(([, label, getVal, setVal]) => {
+        const row = document.createElement("label");
+        row.className = "toggle-item";
+        const lbl = document.createElement("span"); lbl.className = "toggle-label"; lbl.textContent = label;
+        const track = document.createElement("span");
+        track.className = "toggle-track" + (getVal() ? " is-on" : "");
+        track.setAttribute("role", "switch");
+        track.setAttribute("aria-checked", String(!!getVal()));
+        track.tabIndex = 0;
+        track.innerHTML = '<span class="toggle-thumb"></span>';
+        bindToggleSwitch(track, v => { setVal(v); writeState(); renderBoardView(filteredTasks()); });
+        row.appendChild(lbl); row.appendChild(track);
+        pop.appendChild(row);
+      });
+    }
+  }
+
+  function buildSettingsPropRow(key) {
+    const LABELS = { name: "Name", urgency: "Urgency", value: "Value ($)", area: "Area" };
+    const row = document.createElement("div");
+    row.className = "toggle-item settings-prop-row";
+    row.dataset.propKey = key;
+    row.draggable = true;
+
+    const grip = document.createElement("span");
+    grip.className = "settings-drag-grip";
+    grip.innerHTML = `<svg width="9" height="12" viewBox="0 0 9 12" fill="none"><circle cx="2.5" cy="2" r="1" fill="currentColor"/><circle cx="6.5" cy="2" r="1" fill="currentColor"/><circle cx="2.5" cy="5.5" r="1" fill="currentColor"/><circle cx="6.5" cy="5.5" r="1" fill="currentColor"/><circle cx="2.5" cy="9" r="1" fill="currentColor"/><circle cx="6.5" cy="9" r="1" fill="currentColor"/></svg>`;
+    row.appendChild(grip);
+
+    const lbl = document.createElement("span");
+    lbl.className = "toggle-label settings-prop-label";
+    lbl.textContent = LABELS[key] || key;
+    row.appendChild(lbl);
+
+    if (key === "name") {
+      const lock = document.createElement("span");
+      lock.className = "settings-lock-icon";
+      lock.title = "Always visible";
+      lock.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+      row.appendChild(lock);
+    } else {
+      const track = document.createElement("span");
+      track.className = "toggle-track" + (listVisibleProps[key] ? " is-on" : "");
+      track.setAttribute("role", "switch");
+      track.setAttribute("aria-checked", String(!!listVisibleProps[key]));
+      track.tabIndex = 0;
+      track.innerHTML = '<span class="toggle-thumb"></span>';
+      bindToggleSwitch(track, v => { listVisibleProps[key] = v; writeState(); render(); });
+      row.appendChild(track);
+    }
+
+    row.addEventListener("dragstart", e => {
+      settingsDragKey = key;
+      e.dataTransfer.setData("text/plain", key);
+      e.dataTransfer.effectAllowed = "move";
+      setTimeout(() => row.classList.add("settings-row-dragging"), 0);
+    });
+
+    row.addEventListener("dragend", () => {
+      settingsDragKey = null;
+      row.classList.remove("settings-row-dragging");
+      clearSettingsDragIndicators();
+    });
+
+    row.addEventListener("dragover", e => {
+      if (!settingsDragKey || settingsDragKey === key) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      clearSettingsDragIndicators();
+      const rect = row.getBoundingClientRect();
+      row.classList.add(e.clientY < rect.top + rect.height / 2 ? "settings-drop-above" : "settings-drop-below");
+    });
+
+    row.addEventListener("dragleave", e => {
+      if (!row.contains(e.relatedTarget)) {
+        row.classList.remove("settings-drop-above", "settings-drop-below");
+      }
+    });
+
+    row.addEventListener("drop", e => {
+      e.preventDefault();
+      if (!settingsDragKey || settingsDragKey === key) return;
+      const fromKey = settingsDragKey;
+      clearSettingsDragIndicators();
+      row.classList.remove("settings-drop-above", "settings-drop-below");
+      const rect = row.getBoundingClientRect();
+      const above = e.clientY < rect.top + rect.height / 2;
+      const fromIdx = listPropOrder.indexOf(fromKey);
+      if (fromIdx === -1 || !listPropOrder.includes(key)) return;
+      const newOrder = listPropOrder.slice();
+      const [moved] = newOrder.splice(fromIdx, 1);
+      const newToIdx = newOrder.indexOf(key);
+      newOrder.splice(above ? newToIdx : newToIdx + 1, 0, moved);
+      listPropOrder = newOrder;
+      settingsDragKey = null;
+      writeState();
+      render();
+      renderSettingsPopover();
+    });
+
+    return row;
+  }
+
+  function clearSettingsDragIndicators() {
+    el.settingsPopover.querySelectorAll(".settings-drop-above, .settings-drop-below")
+      .forEach(r => r.classList.remove("settings-drop-above", "settings-drop-below"));
+  }
+
+  /* ── Toggle switch helpers ──────────────────────────────────────────────────── */
+
+  // Wire up a <span role="switch"> toggle — calls onChange(newBoolValue) on click/Enter/Space
+  function bindToggleSwitch(el, onChange) {
+    function toggle() {
+      const next = el.getAttribute("aria-checked") !== "true";
+      el.setAttribute("aria-checked", String(next));
+      el.classList.toggle("is-on", next);
+      onChange(next);
+    }
+    el.addEventListener("click", toggle);
+    el.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); toggle(); } });
+  }
+
+
+
   function bindEditorShortcuts() {
     el.notesEditor.addEventListener("keydown", e => {
       // Cmd/Ctrl + B = bold
@@ -1613,6 +2124,10 @@
   /* ── Task mutations ─────────────────────────────────────────────────────────── */
 
   function moveTask(taskId, nextLane) {
+    const existing = getTask(taskId);
+    if (existing && existing.lane !== nextLane) {
+      pushUndo({ type: "lane-change", taskId, fromLane: existing.lane, toLane: nextLane, taskTitle: existing.title });
+    }
     tasks = tasks.map(t =>
       t.id === taskId ? Object.assign({}, t, { lane: nextLane, lastModified: today() }) : t
     );
@@ -1622,59 +2137,330 @@
     if (detailTaskId === taskId) refreshDetailProps(getTask(taskId));
   }
 
+  function confirmDelete(onConfirm) {
+    if (localStorage.getItem("lbm_skipDeleteConfirm") === "true") { onConfirm(); return; }
+    const overlay = document.createElement("div");
+    overlay.className = "delete-confirm-overlay";
+    overlay.innerHTML = `
+      <div class="delete-confirm-dialog">
+        <div class="delete-confirm-header">
+          <p class="delete-confirm-title">Delete this task?</p>
+          <p class="delete-confirm-sub">Press Cmd/Ctrl+Z to undo.</p>
+        </div>
+        <label class="delete-confirm-skip"><input type="checkbox" id="deleteSkipCheck"><span>Don't ask again</span></label>
+        <div class="delete-confirm-actions">
+          <button class="ghost" id="deleteCancelBtn">Cancel</button>
+          <button class="danger" id="deleteConfirmBtn">Delete</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const cancelBtn  = overlay.querySelector("#deleteCancelBtn");
+    const confirmBtn = overlay.querySelector("#deleteConfirmBtn");
+    const cleanup = () => overlay.remove();
+    cancelBtn.onclick  = cleanup;
+    confirmBtn.onclick = () => {
+      if (overlay.querySelector("#deleteSkipCheck").checked) localStorage.setItem("lbm_skipDeleteConfirm", "true");
+      cleanup();
+      onConfirm();
+    };
+    overlay.addEventListener("click", e => { if (e.target === overlay) cleanup(); });
+    overlay.addEventListener("keydown", e => {
+      if (e.key === "ArrowLeft")  { e.preventDefault(); cancelBtn.focus(); }
+      if (e.key === "ArrowRight") { e.preventDefault(); confirmBtn.focus(); }
+      // Stop Enter from bubbling to document-level handlers (e.g. list row open)
+      if (e.key === "Enter") { e.stopPropagation(); }
+    });
+    const escH = e => { if (e.key === "Escape") { cleanup(); document.removeEventListener("keydown", escH); } };
+    document.addEventListener("keydown", escH);
+    confirmBtn.focus();
+  }
+
+  /* ── Undo system ────────────────────────────────────────────────────────────── */
+
+  function pushUndo(entry) {
+    undoStack.push(entry);
+    if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+  }
+
+  function performUndo() {
+    if (!undoStack.length) return;
+    const entry = undoStack.pop();
+
+    if (entry.type === "delete") {
+      const idx = Math.min(entry.index, tasks.length);
+      tasks.splice(idx, 0, entry.task);
+      writeState();
+      render();
+      showUndoToast(`Restored "${clip(entry.task.title)}"`);
+
+    } else if (entry.type === "lane-change") {
+      tasks = tasks.map(t =>
+        t.id === entry.taskId ? Object.assign({}, t, { lane: entry.fromLane }) : t
+      );
+      writeState();
+      render();
+      if (detailTaskId === entry.taskId) refreshDetailProps(getTask(entry.taskId));
+      const label = LANE_LABELS[entry.fromLane] || entry.fromLane;
+      showUndoToast(`Moved "${clip(entry.taskTitle)}" back to ${label}`);
+
+    } else if (entry.type === "title-edit") {
+      tasks = tasks.map(t =>
+        t.id === entry.taskId ? Object.assign({}, t, { title: entry.fromTitle }) : t
+      );
+      writeState();
+      render();
+      if (detailTaskId === entry.taskId) {
+        const restored = getTask(entry.taskId);
+        if (restored) el.detailTitle.textContent = restored.title;
+      }
+      showUndoToast(`Reverted title to "${clip(entry.fromTitle)}"`);
+    }
+  }
+
+  function showUndoToast(message) {
+    const existing = document.querySelector(".undo-toast");
+    if (existing) existing.remove();
+    const toast = document.createElement("div");
+    toast.className = "undo-toast";
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => { requestAnimationFrame(() => toast.classList.add("is-visible")); });
+    setTimeout(() => {
+      toast.classList.remove("is-visible");
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
+  function clip(str, max = 42) {
+    return str.length > max ? str.slice(0, max) + "…" : str;
+  }
+
   function deleteTask(taskId) {
+    const idx = tasks.findIndex(t => t.id === taskId);
+    const deletedTask = idx !== -1 ? tasks[idx] : null;
+    if (deletedTask) pushUndo({ type: "delete", task: Object.assign({}, deletedTask), index: idx });
     tasks = tasks.filter(t => t.id !== taskId);
     writeState();
     render();
+    selectAtDeletedPosition();
+    if (deletedTask) showUndoToast(`"${clip(deletedTask.title)}" deleted — Cmd/Ctrl+Z to undo`);
   }
 
   /* ── Task modal (create / edit) ─────────────────────────────────────────────── */
 
-  function insertGhostRow() {
-    removeGhostRow();
-    const row = document.createElement("article");
-    row.className = "list-row list-row--ghost";
-    row.id = "list-ghost-row";
+  function scrollRowIntoView(row) {
+    const PADDING = 16; // extra breathing room above/below
+    const header  = document.querySelector(".site-header");
+    const stickyH = header ? header.getBoundingClientRect().height : 0;
+    const topClear = stickyH + PADDING;
 
-    const dot = document.createElement("span");
-    dot.className = "list-urgency u-3";
+    const rect = row.getBoundingClientRect();
+    const viewH = window.innerHeight;
 
-    const content = document.createElement("div");
-    content.className = "list-content";
-
-    const title = document.createElement("h3");
-    title.className = "list-title";
-    title.id = "list-ghost-title";
-    title.textContent = "New item…";
-    content.appendChild(title);
-
-    row.appendChild(dot);
-    row.appendChild(content);
-
-    el.taskList.insertBefore(row, el.taskList.firstChild);
-  }
-
-  function removeGhostRow() {
-    const g = document.getElementById("list-ghost-row");
-    if (g) g.remove();
-  }
-
-  function updateGhostTitle() {
-    const g = document.getElementById("list-ghost-title");
-    if (g) g.textContent = el.taskTitle.value.trim() || "New item…";
+    if (rect.top < topClear) {
+      // Row is hidden behind the sticky header — scroll up to reveal it
+      window.scrollBy({ top: rect.top - topClear, behavior: "smooth" });
+    } else if (rect.bottom > viewH - PADDING) {
+      // Row is clipped at the bottom — scroll down to reveal it
+      window.scrollBy({ top: rect.bottom - viewH + PADDING, behavior: "smooth" });
+    }
   }
 
   function highlightNewRow(id) {
     requestAnimationFrame(() => {
       const row = el.taskList.querySelector(`[data-task-id="${id}"]`);
       if (!row) return;
-      row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      scrollRowIntoView(row);
       row.classList.add("is-newly-added");
       row.addEventListener("animationend", () => row.classList.remove("is-newly-added"), { once: true });
     });
   }
 
+  /* ── Inline new-item form (list view) ───────────────────────────────────────── */
+
+  function openListInlineNew() {
+    const existing = document.getElementById("list-inline-new");
+    if (existing) { existing.remove(); return; } // toggle off
+
+    // Remove empty-state placeholder so the form sits at top
+    const empty = el.taskList.querySelector(".empty-state");
+    if (empty) empty.remove();
+
+    const form = document.createElement("div");
+    form.className = "list-inline-new";
+    form.id = "list-inline-new";
+
+    // Invisible spacer matching the drag handle so dot + text align pixel-perfectly with saved rows
+    // (rows have: handle 14px + margin-right -4px + gap 10px = 20px offset before dot)
+    const handleSpacer = document.createElement("span");
+    handleSpacer.style.cssText = "width:14px;flex-shrink:0;margin-right:-4px;";
+    form.appendChild(handleSpacer);
+
+    // Urgency dot — always shown, mirrors list-row layout
+    const dot = document.createElement("span");
+    dot.className = "list-urgency u-3";
+    dot.title = "Urgency 3 — Medium";
+
+    // Body: props above title (per listPropOrder), title input, props below title
+    const body = document.createElement("div");
+    body.className = "list-inline-new-body";
+
+    // Only show inputs for properties enabled in settings
+    let urgencySelect = null;
+    let valueInput    = null;
+    let areaSelect    = null;
+
+    // Build a single prop input element by key; returns null if disabled/not applicable
+    function buildInlineInput(key) {
+      if (key === "urgency" && listVisibleProps.urgency) {
+        urgencySelect = document.createElement("select");
+        urgencySelect.className = "board-inline-new-select";
+        [["1","1 — Low"],["2","2"],["3","3 — Medium"],["4","4 — High"],["5","5 — Critical"]].forEach(([v, t]) => {
+          const opt = document.createElement("option");
+          opt.value = v; opt.textContent = t;
+          if (v === "3") opt.selected = true;
+          urgencySelect.appendChild(opt);
+        });
+        urgencySelect.addEventListener("change", () => {
+          dot.className = `list-urgency u-${urgencySelect.value}`;
+          dot.title = `Urgency ${urgencySelect.value}`;
+        });
+        return urgencySelect;
+      }
+      if (key === "value" && listVisibleProps.value) {
+        valueInput = document.createElement("input");
+        valueInput.type = "number";
+        valueInput.min = "0";
+        valueInput.step = "100";
+        valueInput.placeholder = "Value $";
+        valueInput.className = "board-inline-new-select list-inline-new-value";
+        return valueInput;
+      }
+      if (key === "area" && listVisibleProps.area) {
+        areaSelect = document.createElement("select");
+        areaSelect.className = "board-inline-new-select";
+        tracker.areas.forEach(a => {
+          const opt = document.createElement("option");
+          opt.value = a; opt.textContent = a.replace(/-/g, " ");
+          areaSelect.appendChild(opt);
+        });
+        return areaSelect;
+      }
+      return null;
+    }
+
+    // Mirror listPropOrder: props before "name" → above title, props after → below
+    const nameIdx    = listPropOrder.indexOf("name");
+    const beforeKeys = listPropOrder.slice(0, nameIdx);
+    const afterKeys  = listPropOrder.slice(nameIdx + 1);
+
+    const aboveInputs = beforeKeys.map(buildInlineInput).filter(Boolean);
+    if (aboveInputs.length) {
+      const propsDiv = document.createElement("div");
+      propsDiv.className = "list-inline-new-props";
+      aboveInputs.forEach(inp => propsDiv.appendChild(inp));
+      body.appendChild(propsDiv);
+    }
+
+    const titleInput = document.createElement("input");
+    titleInput.type = "text";
+    titleInput.className = "list-inline-new-title";
+    titleInput.placeholder = "Type the title…";
+    titleInput.autocomplete = "off";
+    body.appendChild(titleInput);
+
+    const belowInputs = afterKeys.map(buildInlineInput).filter(Boolean);
+    if (belowInputs.length) {
+      const propsDiv = document.createElement("div");
+      propsDiv.className = "list-inline-new-props";
+      belowInputs.forEach(inp => propsDiv.appendChild(inp));
+      body.appendChild(propsDiv);
+    }
+
+    // Unified hint-style actions
+    const actions = document.createElement("div");
+    actions.className = "list-inline-new-actions";
+
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "button";
+    saveBtn.className = "list-inline-new-add";
+    saveBtn.textContent = "↵ Add";
+
+    const sep = document.createElement("span");
+    sep.className = "list-inline-new-sep";
+    sep.textContent = "·";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "list-inline-new-cancel-btn";
+    cancelBtn.textContent = "Esc Cancel";
+
+    actions.appendChild(saveBtn);
+    actions.appendChild(sep);
+    actions.appendChild(cancelBtn);
+
+    form.appendChild(dot);
+    form.appendChild(body);
+    form.appendChild(actions);
+
+    el.taskList.insertBefore(form, el.taskList.firstChild);
+    titleInput.focus();
+
+    function dismiss() {
+      form.remove();
+      document.removeEventListener("mousedown", outsideClickHandler);
+      render();
+    }
+
+    function outsideClickHandler(e) {
+      if (!form.contains(e.target)) dismiss();
+    }
+
+    setTimeout(() => document.addEventListener("mousedown", outsideClickHandler), 0);
+
+    function save() {
+      const title = titleInput.value.trim();
+      if (!title) { titleInput.focus(); return; }
+      const urgencyVal = urgencySelect ? clamp(Number(urgencySelect.value) || 3, 1, 5) : 3;
+      const newTask = {
+        id:            createId(),
+        title,
+        notes:         "",
+        body:          "",
+        lane:          "newly-added-or-updated",
+        urgency:       urgencyVal,
+        value:         valueInput ? (Number(valueInput.value) || 0) : 0,
+        priority:      urgencyToPriority(urgencyVal),
+        area:          areaSelect ? areaSelect.value : (tracker.areas[0] || "general"),
+        source:        "user-requested",
+        recommendedBy: "",
+        references:    [],
+        lastModified:  today()
+      };
+      tasks.unshift(newTask);
+      const addedId = newTask.id;
+      writeState();
+      document.removeEventListener("mousedown", outsideClickHandler);
+      form.remove();
+      render();
+      highlightNewRow(addedId);
+    }
+
+    saveBtn.addEventListener("click", save);
+    cancelBtn.addEventListener("click", dismiss);
+    titleInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); save(); }
+      if (e.key === "Escape") { dismiss(); }
+    });
+  }
+
   function openTaskModal(task, defaultLane) {
+    // In list view, new items use the inline form instead of the modal
+    if (!task && activeView === "list") {
+      openListInlineNew();
+      return;
+    }
+
     editingId = task ? task.id : null;
     el.modalTitle.textContent  = task ? "Edit Task" : "New Task";
     el.submitButton.textContent = task ? "Save Changes" : "Save Task";
@@ -1694,10 +2480,6 @@
       el.taskUrgency.value = "3";
       el.taskArea.value    = "project-system";
       el.taskSource.value  = "user-requested";
-      if (activeView === "list") {
-        insertGhostRow();
-        el.taskTitle.oninput = updateGhostTitle;
-      }
     }
   }
 
@@ -1705,8 +2487,6 @@
     el.taskModal.hidden = true;
     editingId = null;
     el.taskForm.reset();
-    removeGhostRow();
-    el.taskTitle.oninput = null;
   }
 
   function handleTaskSubmit(e) {
@@ -1741,12 +2521,13 @@
       justAddedId = nextTask.id;
     }
 
+    const addedId = justAddedId;
     writeState();
     closeTaskModal();
     render();
 
-    if (justAddedId) {
-      highlightNewRow(justAddedId);
+    if (addedId) {
+      highlightNewRow(addedId);
       justAddedId = null;
     }
   }

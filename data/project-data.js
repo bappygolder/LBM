@@ -262,6 +262,50 @@ window.MCCProjectData = {
         references: []
       },
       {
+        id: "LBM-007",
+        title: "Add redo functionality (Cmd+Shift+Z)",
+        notes: "Follow-on to the undo system. Implement a redo stack that re-applies the last undone action. Undo and redo stacks should stay in sync: redoing after a new action clears the redo stack.",
+        lane: "backlog",
+        priority: "P2",
+        area: "product",
+        source: "recommended",
+        recommendedBy: "Bappy Golder",
+        references: []
+      },
+      {
+        id: "LBM-008",
+        title: "Persist undo history across page refresh using sessionStorage",
+        notes: "The undo stack currently lives in memory and is lost on reload. Serialise it to sessionStorage so users can undo after an accidental page refresh within the same browser tab session.",
+        lane: "backlog",
+        priority: "P3",
+        area: "platform",
+        source: "recommended",
+        recommendedBy: "Bappy Golder",
+        references: []
+      },
+      {
+        id: "LBM-009",
+        title: "Undo drag-and-drop reorders in list and board view",
+        notes: "Currently only lane changes via moveTask() are tracked. Drag-to-reorder within the list (manual sort) and board column reordering are not yet undoable. Extend the undo stack to cover these cases.",
+        lane: "backlog",
+        priority: "P2",
+        area: "product",
+        source: "recommended",
+        recommendedBy: "Bappy Golder",
+        references: []
+      },
+      {
+        id: "LBM-010",
+        title: "Show a mini undo history pop-up (last 5 actions)",
+        notes: "Add a small hoverable history indicator near the undo toast, or inside the settings popover, that lists the last 5 undoable actions by description. Clicking an entry undoes back to that point.",
+        lane: "backlog",
+        priority: "P3",
+        area: "ui-ux",
+        source: "recommended",
+        recommendedBy: "Bappy Golder",
+        references: []
+      },
+      {
         id: "LBM-001",
         title: "Design the OBM Freemium SaaS Architecture",
         notes: "Brainstorm cloud syncing strategies and gamified business structure for the online-tier SaaS version.",
@@ -302,6 +346,11 @@ window.MCCProjectData = {
       path: "docs/LOCAL_PROJECT_SYSTEM.md"
     },
     {
+      title: "Keyboard Shortcuts",
+      summary: "All keyboard shortcuts across the app: navigation, new items, search, detail panel, and board view.",
+      path: "docs/KEYBOARD_SHORTCUTS.md"
+    },
+    {
       title: "LBM Development Guide",
       summary: "How to add features, update styles, and extend the task tracker.",
       path: "SKILL.md"
@@ -312,5 +361,11 @@ window.MCCProjectData = {
       path: "PHASES.md"
     }
   ],
-  skills: []
+  skills: [
+    {
+      title: "Front-End Design Skill",
+      summary: "Design reference for all CSS and UI work: type scale, spacing grid, color system, component patterns, motion rules, and accessibility — drawn from Linear, shadcn/ui, Material Design 3, and Apple HIG.",
+      path: "DESIGN_SKILL.md"
+    }
+  ]
 };
