@@ -236,7 +236,7 @@ a { color: inherit; text-decoration: none; }
 .toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 7px 10px;
   background: var(--surface);
@@ -250,6 +250,7 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   gap: 5px;
+  margin-left: auto; /* pushes right when bar is hidden */
 }
 
 .toolbar-icon-btn {
@@ -274,6 +275,47 @@ a { color: inherit; text-decoration: none; }
   padding: 0 14px;
   font-size: 0.84rem;
   gap: 5px;
+}
+
+.new-btn-wrap {
+  position: relative;
+}
+
+.new-btn-tooltip {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  background: var(--surface-2, #1e1e2e);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 99;
+}
+
+.new-btn-wrap:hover .new-btn-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.new-btn-kbd {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.7rem;
+  font-family: inherit;
+  color: var(--text);
+  letter-spacing: 0.01em;
 }
 
 /* ─── View toggle ───────────────────────────────────────────────────────────── */
@@ -311,18 +353,53 @@ a { color: inherit; text-decoration: none; }
   box-shadow: 0 1px 6px var(--accent-glow);
 }
 
-/* ─── Search + filter bar ───────────────────────────────────────────────────── */
+/* ─── Drawer: slides out from the icon cluster ──────────────────────────────── */
 
+/* Closed state — collapsed, invisible, not interactive */
 .search-filter-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  backdrop-filter: blur(16px);
-  margin-bottom: 10px;
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  pointer-events: none;
+  padding: 0;
+  border: none;
+  border-right: 1px solid transparent;
+  transition:
+    max-width  0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity    0.2s  ease,
+    padding    0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.2s ease;
+}
+
+/* Open state */
+.search-filter-bar.is-open {
+  max-width: 320px;
+  opacity: 1;
+  pointer-events: auto;
+  padding: 0 14px 0 0;
+  border-right: 1px solid var(--border-strong);
+}
+
+/* Shared section base */
+.bar-search-section,
+.bar-filter-section,
+.bar-sort-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap; /* prevent wrapping during animation */
+}
+
+/* ── Search section ── */
+.bar-search-section {
+  width: 180px;
+}
+
+.search-bar-icon {
+  flex-shrink: 0;
+  color: var(--muted-soft);
 }
 
 .search-input {
@@ -332,18 +409,89 @@ a { color: inherit; text-decoration: none; }
   border: none;
   color: var(--text);
   font: inherit;
-  font-size: 0.9rem;
-  padding: 4px 0;
+  font-size: 0.82rem;
+  padding: 3px 0;
+  width: auto;
 }
 
 .search-input:focus { outline: none; }
 .search-input::placeholder { color: var(--muted-soft); }
 
-.filter-summary {
-  flex-shrink: 0;
-  font-size: 0.72rem;
-  color: var(--muted-soft);
+/* ── Filter section ── */
+.bar-section-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.bar-filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: rgba(255, 255, 255, 0.05);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 3px 26px 3px 9px;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  width: auto;
+  max-width: 160px;
+  min-width: 80px;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.bar-filter-select:hover {
+  border-color: var(--border-strong);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.bar-filter-select:focus {
+  outline: none;
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+}
+
+/* ── Sort section ── */
+.bar-sort-section {
+  gap: 2px;
+}
+
+.bar-sort-sep {
+  color: var(--muted-soft);
+  font-size: 0.7rem;
+  user-select: none;
+}
+
+.bar-sort-btn {
+  background: none;
+  border: none;
+  padding: 2px 5px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.12s, background 0.12s;
+  height: auto;
+  white-space: nowrap;
+}
+
+.bar-sort-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.bar-sort-btn.active {
+  color: var(--accent-hover);
+  font-weight: 600;
 }
 
 /* ─── Inputs / selects / buttons (shared) ───────────────────────────────────── */
@@ -493,6 +641,21 @@ button.ghost:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); 
   letter-spacing: 0.09em;
 }
 
+.list-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  color: var(--muted-soft);
+  opacity: 0;
+  cursor: grab;
+  transition: opacity 0.12s;
+  margin-right: -4px;
+}
+.list-row:hover .list-drag-handle { opacity: 0.45; }
+.list-row:hover .list-drag-handle:hover { opacity: 1; }
+
 .list-row {
   display: flex;
   align-items: center;
@@ -506,6 +669,39 @@ button.ghost:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); 
   min-height: 36px;
 }
 
+.list-row.is-dragging {
+  opacity: 0.35;
+  transform: scale(0.99);
+}
+
+.list-row.drag-over-above,
+.list-row.drag-over-below {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.list-row.drag-over-above::before,
+.list-row.drag-over-below::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 0;
+  height: 1px;
+  background: var(--accent);
+  border-radius: 1px;
+  pointer-events: none;
+  opacity: 0.65;
+  box-shadow: -5px 0 0 1.5px var(--accent);
+}
+
+.list-row.drag-over-above::before {
+  top: -1px;
+}
+
+.list-row.drag-over-below::after {
+  bottom: -1px;
+}
+
 .list-row:hover {
   background: rgba(255, 255, 255, 0.04);
   border-color: var(--border);
@@ -513,6 +709,28 @@ button.ghost:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); 
 
 .list-row.is-done .list-title { text-decoration: line-through; opacity: 0.45; }
 .list-row.is-done .list-notes { opacity: 0.35; }
+
+/* Ghost row — preview while new-item modal is open */
+.list-row--ghost {
+  opacity: 0.5;
+  border: 1px dashed var(--border) !important;
+  pointer-events: none;
+  background: rgba(255,255,255,0.02) !important;
+}
+.list-row--ghost .list-title {
+  color: var(--text-2);
+  font-style: italic;
+}
+
+/* Newly-added highlight animation */
+@keyframes row-highlight-in {
+  0%   { background: rgba(167, 139, 250, 0.2); border-color: rgba(167, 139, 250, 0.45); }
+  65%  { background: rgba(167, 139, 250, 0.08); border-color: rgba(167, 139, 250, 0.2); }
+  100% { background: transparent; border-color: transparent; }
+}
+.list-row.is-newly-added {
+  animation: row-highlight-in 2s ease-out forwards;
+}
 
 /* urgency dot */
 .list-urgency {
@@ -1096,8 +1314,26 @@ button.ghost:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); 
   padding: 8px 9px;
   cursor: pointer;
   user-select: none;
+  position: relative;
   transition: background 0.12s, border-color 0.12s, transform 0.12s, opacity 0.12s;
 }
+
+/* Card drop position indicators (shown above/below a card during task drag) */
+.board-card.card-drop-above::before,
+.board-card.card-drop-below::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.7);
+  pointer-events: none;
+}
+
+.board-card.card-drop-above::before { top: -4px; }
+.board-card.card-drop-below::after  { bottom: -4px; }
 
 .board-card:hover {
   background: rgba(255, 255, 255, 0.055);

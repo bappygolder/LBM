@@ -93,6 +93,44 @@
       </div>
 
       <div class="toolbar-right">
+
+        <!-- ── Drawer: slides out from icons when one is activated ── -->
+        <div class="search-filter-bar" id="searchFilterBar">
+
+          <div class="bar-search-section" id="barSearchSection" hidden>
+            <svg class="search-bar-icon" width="13" height="13" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input class="search-input" id="searchInput" type="text" placeholder="Type to search…" autocomplete="off">
+          </div>
+
+          <div class="bar-filter-section" id="barFilterSection" hidden>
+            <span class="bar-section-label">Filter by</span>
+            <select class="bar-filter-select" id="filterSelect">
+              <option value="all">All tasks</option>
+              <option value="active">Active only</option>
+              <option value="done">Completed / Archived</option>
+              <option value="urgent">Urgent (4+)</option>
+              <option value="recommended">Recommended</option>
+              <option value="requested">Requested</option>
+            </select>
+          </div>
+
+          <div class="bar-sort-section" id="barSortSection" hidden>
+            <span class="bar-section-label">Sort by</span>
+            <button class="bar-sort-btn" data-sort="urgency">Urgency</button>
+            <span class="bar-sort-sep">·</span>
+            <button class="bar-sort-btn" data-sort="value">Value</button>
+            <span class="bar-sort-sep">·</span>
+            <button class="bar-sort-btn" data-sort="modified">Modified</button>
+            <span class="bar-sort-sep">·</span>
+            <button class="bar-sort-btn" data-sort="manual">Manual</button>
+          </div>
+
+        </div>
+        <!-- ── /Drawer ── -->
         <button class="icon-button toolbar-icon-btn" id="searchToggle" type="button"
           title="Search" aria-expanded="false" aria-controls="searchFilterBar">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -105,6 +143,16 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+        </button>
+        <button class="icon-button toolbar-icon-btn" id="sortToggle" type="button"
+          title="Sort" aria-expanded="false" aria-controls="searchFilterBar">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="7" y1="4" x2="7" y2="20"/>
+            <polyline points="4 7 7 4 10 7"/>
+            <line x1="17" y1="20" x2="17" y2="4"/>
+            <polyline points="14 17 17 20 20 17"/>
           </svg>
         </button>
         <div class="card-fields-wrap" style="position:relative">
@@ -124,28 +172,17 @@
             <label class="card-field-item"><input type="checkbox" id="cfArea"> Area</label>
           </div>
         </div>
-        <button class="primary toolbar-add-btn" id="openCreateButton" type="button">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2.5" stroke-linecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          New
-        </button>
+        <div class="new-btn-wrap">
+          <button class="primary toolbar-add-btn" id="openCreateButton" type="button">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New
+          </button>
+          <div class="new-btn-tooltip">New item<span class="new-btn-kbd">Ctrl+N</span></div>
+        </div>
       </div>
-    </div>
-
-    <!-- ── Search + filter bar (expandable) ──────────────────────────────────── -->
-    <div class="search-filter-bar" id="searchFilterBar" hidden>
-      <input class="search-input" id="searchInput" type="text" placeholder="Search tasks…" autocomplete="off">
-      <select id="filterSelect">
-        <option value="all">All tasks</option>
-        <option value="active">Active only</option>
-        <option value="done">Completed / Archived</option>
-        <option value="urgent">Urgent (4+)</option>
-        <option value="recommended">Recommended</option>
-        <option value="requested">Requested</option>
-      </select>
-      <span class="filter-summary" id="filterSummary"></span>
     </div>
 
     <!-- ── Views container ───────────────────────────────────────────────────── -->

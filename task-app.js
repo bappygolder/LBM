@@ -68,8 +68,7 @@
   let collapsedCols  = []; // [colKey, ...] — collapsed in board view
   let activeView     = "list";
   let hiddenExpanded = false;
-  let searchOpen     = false;
-  let filterOpen     = false;
+  let activeBarMode  = null; // null | "search" | "filter" | "sort"
 
   let editingId         = null; // task being edited in the modal
   let detailTaskId      = null; // task shown in detail panel
@@ -82,8 +81,19 @@
   // Detail panel view mode: "side" | "center" | "full"
   let detailMode = "side";
 
-  // List view sort: "urgency" | "value" | "modified"
+  // List view sort: "urgency" | "value" | "modified" | "manual"
   let listSort = "urgency";
+
+  // Manual sort order for list view — array of task IDs (active tasks only)
+  let listManualOrder = [];
+
+  // List view drag state
+  let listDragTaskId = null;
+  let listDragOverId = null;
+  let listDropAbove  = false;
+
+  // ID of the task just added (used to scroll + highlight after render)
+  let justAddedId = null;
 
   // Which properties to show on board cards
   const DEFAULT_CARD_PROPS = { urgency: true, notes: true, value: false, area: false };
@@ -116,10 +126,13 @@
 
     searchToggle:       document.getElementById("searchToggle"),
     filterToggle:       document.getElementById("filterToggle"),
+    sortToggle:         document.getElementById("sortToggle"),
     searchFilterBar:    document.getElementById("searchFilterBar"),
+    barSearchSection:   document.getElementById("barSearchSection"),
+    barFilterSection:   document.getElementById("barFilterSection"),
+    barSortSection:     document.getElementById("barSortSection"),
     searchInput:        document.getElementById("searchInput"),
     filterSelect:       document.getElementById("filterSelect"),
-    filterSummary:      document.getElementById("filterSummary"),
     openCreateButton:   document.getElementById("openCreateButton"),
 
     taskList:           document.getElementById("taskList"),
@@ -211,6 +224,7 @@
     if (state.ui.propLabels) propLabels = Object.assign({}, DEFAULT_PROP_LABELS, state.ui.propLabels);
     if (state.ui.propsCollapsed !== undefined) propsCollapsed = Boolean(state.ui.propsCollapsed);
     if (state.ui.listSort) listSort = state.ui.listSort;
+    if (Array.isArray(state.ui.listManualOrder)) listManualOrder = state.ui.listManualOrder;
 
     // Re-register any custom lane keys saved in boardColumns so list view and
     // normalizeLane() can find them after a page reload.
@@ -286,7 +300,8 @@
         detailPropOrder,
         propLabels,
         propsCollapsed,
-        listSort
+        listSort,
+        listManualOrder
       },
       savedAt: new Date().toISOString()
     }));
@@ -342,11 +357,21 @@
     el.listViewButton.addEventListener("click", () => setView("list"));
     el.boardViewButton.addEventListener("click", () => setView("board"));
 
-    // Search / filter toggle
+    // Search / filter / sort toggle
     el.searchToggle.addEventListener("click", () => toggleSearch());
     el.filterToggle.addEventListener("click", () => toggleFilter());
+    el.sortToggle.addEventListener("click", () => toggleSort());
     el.searchInput.addEventListener("input", render);
     el.filterSelect.addEventListener("change", render);
+
+    // Bar sort buttons
+    el.barSortSection.addEventListener("click", e => {
+      const btn = e.target.closest("[data-sort]");
+      if (!btn) return;
+      listSort = btn.dataset.sort;
+      writeState();
+      render();
+    });
 
     // Create button
     el.openCreateButton.addEventListener("click", () => openTaskModal(null));
@@ -497,6 +522,7 @@
         if (!el.addColModal.hidden) { closeAddColModal(); return; }
         if (!el.detailOverlay.hidden) { closeDetail(); return; }
       }
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === "n") { e.preventDefault(); openTaskModal(null); return; }
       const tag = document.activeElement.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable) return;
       if (e.key === "n" || e.key === "N") openTaskModal(null);
@@ -523,6 +549,10 @@
     el.boardViewButton.setAttribute("aria-selected", String(!isList));
     // Card fields button only shows in board view
     el.cardFieldsBtn.hidden = isList;
+    // Sort toggle only makes sense in list view
+    el.sortToggle.hidden = !isList;
+    // If we switch to board view while in sort mode, close the bar
+    if (!isList && activeBarMode === "sort") setBarMode(null);
     // Sync checkbox state
     el.cfUrgency.checked = cardVisibleProps.urgency;
     el.cfNotes.checked   = cardVisibleProps.notes;
@@ -530,22 +560,41 @@
     el.cfArea.checked    = cardVisibleProps.area;
   }
 
-  /* ── Search / filter bar ────────────────────────────────────────────────────── */
+  /* ── Search / filter / sort bar ─────────────────────────────────────────────── */
 
-  function toggleSearch(forceOpen) {
-    const open = forceOpen != null ? forceOpen : !searchOpen;
-    searchOpen = open;
-    filterOpen = open;
-    el.searchFilterBar.hidden = !open;
-    el.searchToggle.classList.toggle("is-active", open);
-    el.filterToggle.classList.toggle("is-active", open);
-    el.searchToggle.setAttribute("aria-expanded", String(open));
-    el.filterToggle.setAttribute("aria-expanded", String(open));
-    if (open) el.searchInput.focus();
+  function setBarMode(mode) {
+    // Toggle off if clicking the already-active mode
+    activeBarMode = (activeBarMode === mode) ? null : mode;
+
+    const open = activeBarMode !== null;
+    el.searchFilterBar.classList.toggle("is-open", open);
+    el.barSearchSection.hidden   = activeBarMode !== "search";
+    el.barFilterSection.hidden   = activeBarMode !== "filter";
+    el.barSortSection.hidden     = activeBarMode !== "sort";
+
+    el.searchToggle.classList.toggle("is-active", activeBarMode === "search");
+    el.filterToggle.classList.toggle("is-active", activeBarMode === "filter");
+    el.sortToggle.classList.toggle("is-active",   activeBarMode === "sort");
+
+    el.searchToggle.setAttribute("aria-expanded", String(activeBarMode === "search"));
+    el.filterToggle.setAttribute("aria-expanded", String(activeBarMode === "filter"));
+    el.sortToggle.setAttribute("aria-expanded",   String(activeBarMode === "sort"));
+
+    if (activeBarMode === "search") el.searchInput.focus();
+    if (activeBarMode === "sort")   syncBarSortBtns();
   }
 
-  function toggleFilter() {
-    toggleSearch();
+  function toggleSearch(forceOpen) {
+    if (forceOpen === true && activeBarMode !== "search") { setBarMode("search"); return; }
+    setBarMode("search");
+  }
+  function toggleFilter() { setBarMode("filter"); }
+  function toggleSort()   { setBarMode("sort"); }
+
+  function syncBarSortBtns() {
+    el.barSortSection.querySelectorAll("[data-sort]").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.sort === listSort);
+    });
   }
 
   /* ── Info panel ─────────────────────────────────────────────────────────────── */
@@ -585,8 +634,8 @@
     ].map(s => `<div class="mini-stat"><strong>${s.value}</strong><span>${s.label}</span></div>`).join("");
   }
 
-  function renderFilterSummary(filtered) {
-    el.filterSummary.textContent = `${filtered.length} shown · ${tasks.length} total`;
+  function renderFilterSummary() {
+    // Summary display removed — no-op
   }
 
   /* ── Filter logic ───────────────────────────────────────────────────────────── */
@@ -616,46 +665,95 @@
   function renderListView(filtered) {
     const active = filtered.filter(t => ACTIVE_LANES.includes(t.lane)).sort(sortTasks);
 
-    // Sort bar
-    let sortBar = document.getElementById("listSortBar");
-    if (!sortBar) {
-      sortBar = document.createElement("div");
-      sortBar.id = "listSortBar";
-      sortBar.className = "list-sort-bar";
-      sortBar.innerHTML = `<span class="list-sort-label">Sort:</span>
-        <button class="list-sort-btn" data-sort="urgency">Urgency</button>
-        <span class="list-sort-sep">·</span>
-        <button class="list-sort-btn" data-sort="value">Value</button>
-        <span class="list-sort-sep">·</span>
-        <button class="list-sort-btn" data-sort="modified">Modified</button>`;
-      el.taskList.parentElement.insertBefore(sortBar, el.taskList);
-      sortBar.addEventListener("click", e => {
-        const btn = e.target.closest("[data-sort]");
-        if (!btn) return;
-        listSort = btn.dataset.sort;
-        writeState();
-        render();
-      });
-    }
-    sortBar.querySelectorAll(".list-sort-btn").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.sort === listSort);
-    });
+    syncBarSortBtns();
 
     el.taskList.innerHTML = "";
 
     if (!active.length) {
       el.taskList.innerHTML = '<div class="empty-state">No active tasks. Press N to add one.</div>';
     } else {
-      active.forEach(t => el.taskList.appendChild(buildListRow(t)));
+      active.forEach(t => el.taskList.appendChild(buildListRow(t, true)));
     }
 
+    // Always render completed/archived at the bottom, after active tasks
     renderHiddenLists(filtered);
   }
 
-  function buildListRow(task) {
+  function buildListRow(task, enableDrag = false) {
     const row = document.createElement("article");
     row.className = "list-row" + (DONE_LANES.includes(task.lane) ? " is-done" : "");
     row.dataset.taskId = task.id;
+
+    // Drag handle (active tasks only)
+    if (enableDrag) {
+      const handle = document.createElement("span");
+      handle.className = "list-drag-handle";
+      handle.title = "Drag to reorder";
+      handle.innerHTML = `<svg width="10" height="14" viewBox="0 0 10 14" fill="none"><circle cx="3" cy="2" r="1.1" fill="currentColor"/><circle cx="7" cy="2" r="1.1" fill="currentColor"/><circle cx="3" cy="6" r="1.1" fill="currentColor"/><circle cx="7" cy="6" r="1.1" fill="currentColor"/><circle cx="3" cy="10" r="1.1" fill="currentColor"/><circle cx="7" cy="10" r="1.1" fill="currentColor"/></svg>`;
+      row.appendChild(handle);
+
+      row.draggable = true;
+
+      row.addEventListener("dragstart", e => {
+        if (e.target.closest(".list-tools")) { e.preventDefault(); return; }
+        listDragTaskId = task.id;
+        e.dataTransfer.effectAllowed = "move";
+        setTimeout(() => row.classList.add("is-dragging"), 0);
+      });
+
+      row.addEventListener("dragend", () => {
+        listDragTaskId = null;
+        listDragOverId = null;
+        row.classList.remove("is-dragging");
+        clearListDragIndicators();
+      });
+
+      row.addEventListener("dragover", e => {
+        if (!listDragTaskId || listDragTaskId === task.id) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        const rect  = row.getBoundingClientRect();
+        const above = e.clientY < rect.top + rect.height / 2;
+        if (listDragOverId !== task.id || listDropAbove !== above) {
+          clearListDragIndicators();
+          listDragOverId = task.id;
+          listDropAbove  = above;
+          row.classList.add(above ? "drag-over-above" : "drag-over-below");
+        }
+      });
+
+      row.addEventListener("dragleave", e => {
+        if (!row.contains(e.relatedTarget)) {
+          row.classList.remove("drag-over-above", "drag-over-below");
+          if (listDragOverId === task.id) listDragOverId = null;
+        }
+      });
+
+      row.addEventListener("drop", e => {
+        if (!listDragTaskId || listDragTaskId === task.id) return;
+        e.preventDefault();
+        row.classList.remove("drag-over-above", "drag-over-below");
+
+        const rows       = [...el.taskList.querySelectorAll("[data-task-id]")];
+        const currentOrder = rows.map(r => r.dataset.taskId);
+        const fromIdx    = currentOrder.indexOf(listDragTaskId);
+        const toIdx      = currentOrder.indexOf(task.id);
+        if (fromIdx === -1 || toIdx === -1) return;
+
+        const newOrder  = currentOrder.slice();
+        const [moved]   = newOrder.splice(fromIdx, 1);
+        const targetIdx = newOrder.indexOf(task.id);
+        const insertAt  = listDropAbove ? targetIdx : targetIdx + 1;
+        newOrder.splice(insertAt, 0, moved);
+
+        listManualOrder = newOrder;
+        listSort        = "manual";
+        listDragTaskId  = null;
+        listDragOverId  = null;
+        writeState();
+        render();
+      });
+    }
 
     // Urgency dot
     const dot = document.createElement("span");
@@ -737,6 +835,12 @@
     hiddenExpanded = !hiddenExpanded;
     writeState();
     renderHiddenLists(filteredTasks());
+  }
+
+  function clearListDragIndicators() {
+    el.taskList.querySelectorAll(".drag-over-above, .drag-over-below").forEach(r => {
+      r.classList.remove("drag-over-above", "drag-over-below");
+    });
   }
 
   /* ── BOARD VIEW ─────────────────────────────────────────────────────────────── */
@@ -941,6 +1045,8 @@
     card.addEventListener("dragend", () => {
       dragTaskId = null;
       card.classList.remove("is-dragging");
+      clearCardDropIndicators();
+      document.querySelectorAll(".board-column-body").forEach(b => b.classList.remove("drag-over"));
     });
 
     const top = document.createElement("div");
@@ -1017,18 +1123,48 @@
     });
   }
 
+  function clearCardDropIndicators() {
+    document.querySelectorAll(".board-card.card-drop-above, .board-card.card-drop-below")
+      .forEach(c => c.classList.remove("card-drop-above", "card-drop-below"));
+  }
+
   function bindDropZone(body) {
     body.addEventListener("dragover", e => {
+      if (!dragTaskId) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
       body.classList.add("drag-over");
+
+      // Compute insertion position among visible (non-dragging) cards
+      const cards = [...body.querySelectorAll(".board-card:not(.is-dragging)")];
+      clearCardDropIndicators();
+
+      if (cards.length === 0) return;
+
+      let targetCard = cards[cards.length - 1];
+      let position   = "below";
+
+      for (let i = 0; i < cards.length; i++) {
+        const rect = cards[i].getBoundingClientRect();
+        if (e.clientY < rect.top + rect.height / 2) {
+          targetCard = cards[i];
+          position   = "above";
+          break;
+        }
+      }
+
+      targetCard.classList.add(position === "above" ? "card-drop-above" : "card-drop-below");
     });
     body.addEventListener("dragleave", e => {
-      if (!body.contains(e.relatedTarget)) body.classList.remove("drag-over");
+      if (!body.contains(e.relatedTarget)) {
+        body.classList.remove("drag-over");
+        clearCardDropIndicators();
+      }
     });
     body.addEventListener("drop", e => {
       e.preventDefault();
       body.classList.remove("drag-over");
+      clearCardDropIndicators();
       if (dragTaskId) moveTask(dragTaskId, body.dataset.dropLane);
     });
   }
@@ -1494,6 +1630,50 @@
 
   /* ── Task modal (create / edit) ─────────────────────────────────────────────── */
 
+  function insertGhostRow() {
+    removeGhostRow();
+    const row = document.createElement("article");
+    row.className = "list-row list-row--ghost";
+    row.id = "list-ghost-row";
+
+    const dot = document.createElement("span");
+    dot.className = "list-urgency u-3";
+
+    const content = document.createElement("div");
+    content.className = "list-content";
+
+    const title = document.createElement("h3");
+    title.className = "list-title";
+    title.id = "list-ghost-title";
+    title.textContent = "New item…";
+    content.appendChild(title);
+
+    row.appendChild(dot);
+    row.appendChild(content);
+
+    el.taskList.insertBefore(row, el.taskList.firstChild);
+  }
+
+  function removeGhostRow() {
+    const g = document.getElementById("list-ghost-row");
+    if (g) g.remove();
+  }
+
+  function updateGhostTitle() {
+    const g = document.getElementById("list-ghost-title");
+    if (g) g.textContent = el.taskTitle.value.trim() || "New item…";
+  }
+
+  function highlightNewRow(id) {
+    requestAnimationFrame(() => {
+      const row = el.taskList.querySelector(`[data-task-id="${id}"]`);
+      if (!row) return;
+      row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      row.classList.add("is-newly-added");
+      row.addEventListener("animationend", () => row.classList.remove("is-newly-added"), { once: true });
+    });
+  }
+
   function openTaskModal(task, defaultLane) {
     editingId = task ? task.id : null;
     el.modalTitle.textContent  = task ? "Edit Task" : "New Task";
@@ -1514,6 +1694,10 @@
       el.taskUrgency.value = "3";
       el.taskArea.value    = "project-system";
       el.taskSource.value  = "user-requested";
+      if (activeView === "list") {
+        insertGhostRow();
+        el.taskTitle.oninput = updateGhostTitle;
+      }
     }
   }
 
@@ -1521,6 +1705,8 @@
     el.taskModal.hidden = true;
     editingId = null;
     el.taskForm.reset();
+    removeGhostRow();
+    el.taskTitle.oninput = null;
   }
 
   function handleTaskSubmit(e) {
@@ -1552,11 +1738,17 @@
       tasks = tasks.map(t => t.id === editingId ? nextTask : t);
     } else {
       tasks.unshift(nextTask);
+      justAddedId = nextTask.id;
     }
 
     writeState();
     closeTaskModal();
     render();
+
+    if (justAddedId) {
+      highlightNewRow(justAddedId);
+      justAddedId = null;
+    }
   }
 
   /* ── Inline new-item form (board view) ─────────────────────────────────────── */
@@ -1677,6 +1869,14 @@
 
   function sortTasks(a, b) {
     switch (listSort) {
+      case "manual": {
+        const ai = listManualOrder.indexOf(a.id);
+        const bi = listManualOrder.indexOf(b.id);
+        if (ai === -1 && bi === -1) return 0;
+        if (ai === -1) return 1;   // unknown tasks sink to bottom
+        if (bi === -1) return -1;
+        return ai - bi;
+      }
       case "value":
         if (b.value   !== a.value)   return b.value   - a.value;
         if (b.urgency !== a.urgency) return b.urgency - a.urgency;
