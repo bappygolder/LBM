@@ -250,6 +250,18 @@ window.MCCProjectData = {
         references: []
       },
       {
+        id: "LBM-003",
+        title: "Allow the header icon to be customised by the user",
+        notes:
+          "The icon left of the project title is currently a hardcoded SVG. Let users swap it for an emoji, an uploaded image, or a preset icon — similar to how Notion lets you set a page icon. Store the selection in localStorage alongside the project name.",
+        lane: "backlog",
+        priority: "P2",
+        area: "ui-ux",
+        source: "user-requested",
+        recommendedBy: "",
+        references: []
+      },
+      {
         id: "LBM-001",
         title: "Design the OBM Freemium SaaS Architecture",
         notes: "Brainstorm cloud syncing strategies and gamified business structure for the online-tier SaaS version.",

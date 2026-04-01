@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="styles.css">
   <script defer src="data/project-data.js"></script>
+  <script defer src="header.js"></script>
   <script defer src="data/docs-content.js"></script>
   <script defer src="docs-app.js"></script>
 </head>
@@ -36,8 +37,8 @@
               </linearGradient>
             </defs>
           </svg>
-          <span class="brand-name">LBM</span>
         </a>
+        <span class="brand-name" id="brandName" title="Click to rename">LBM</span>
       </div>
       <nav class="tabs" aria-label="Navigation">
         <a class="tab" href="index.html">Tasks</a>
@@ -47,15 +48,40 @@
     </div>
   </header>
 
+  <!-- Mobile-only docs navigation bar -->
+  <div class="docs-topbar" id="docsTopbar">
+    <button class="docs-menu-toggle" id="docsMenuToggle" type="button" aria-label="Open navigation">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2.2" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+      <span id="docsTopbarLabel">Docs</span>
+    </button>
+  </div>
+
   <div class="docs-page">
 
-    <aside class="docs-sidebar">
+    <!-- Drawer backdrop (mobile) -->
+    <div class="docs-drawer-backdrop" id="docsDrawerBackdrop"></div>
+
+    <aside class="docs-sidebar" id="docsSidebar">
       <div class="sidebar-section">
-        <div class="sidebar-section-label">Documentation</div>
+        <button class="sidebar-section-label" data-target="docsNav" aria-expanded="true">
+          <span>Documentation</span>
+          <svg class="section-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+            <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
         <div class="sidebar-items" id="docsNav"></div>
       </div>
       <div class="sidebar-section">
-        <div class="sidebar-section-label">Skills</div>
+        <button class="sidebar-section-label" data-target="skillsNav" aria-expanded="true">
+          <span>Skills</span>
+          <svg class="section-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+            <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
         <div class="sidebar-items" id="skillsNav"></div>
       </div>
     </aside>

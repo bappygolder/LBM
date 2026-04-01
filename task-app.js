@@ -100,7 +100,6 @@
   /* ── Element references ────────────────────────────────────────────────────── */
 
   const el = {
-    brandName:          document.getElementById("brandName"),
     toggleInfoButton:   document.getElementById("toggleInfoButton"),
     infoDrawer:         document.getElementById("infoDrawer"),
     statsGrid:          document.getElementById("statsGrid"),
@@ -229,7 +228,6 @@
     }
 
     el.storageStatus.textContent = "Self-contained: seed data in project-data.js + browser localStorage. No external database needed.";
-    el.brandName.textContent     = data.project.name || "LBM";
 
     populateAreaSelect();
     populateLaneSelect();
@@ -672,14 +670,6 @@
     title.className = "list-title";
     title.textContent = task.title;
     content.appendChild(title);
-
-    const preview = plainPreview(task);
-    if (preview) {
-      const notes = document.createElement("p");
-      notes.className = "list-notes";
-      notes.textContent = preview;
-      content.appendChild(notes);
-    }
 
     // Lane pill
     const lane = document.createElement("span");

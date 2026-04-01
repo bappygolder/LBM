@@ -39,7 +39,7 @@
       const button = document.createElement("button");
       button.type = "button";
       button.className = "nav-item";
-      button.title = item.summary;
+      button.title = item.title + (item.summary ? " — " + item.summary : "");
       button.textContent = item.title;
       button.addEventListener("click", function () {
         openItem(item);
@@ -189,4 +189,51 @@
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
   }
+
+  // ── Mobile drawer ─────────────────────────────────────────────────────────────
+  var docsSidebar = document.getElementById("docsSidebar");
+  var docsMenuToggle = document.getElementById("docsMenuToggle");
+  var docsDrawerBackdrop = document.getElementById("docsDrawerBackdrop");
+  var docsTopbarLabel = document.getElementById("docsTopbarLabel");
+
+  function openDrawer() {
+    if (docsSidebar) docsSidebar.classList.add("is-open");
+    if (docsDrawerBackdrop) docsDrawerBackdrop.classList.add("is-open");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeDrawer() {
+    if (docsSidebar) docsSidebar.classList.remove("is-open");
+    if (docsDrawerBackdrop) docsDrawerBackdrop.classList.remove("is-open");
+    document.body.style.overflow = "";
+  }
+
+  if (docsMenuToggle) docsMenuToggle.addEventListener("click", openDrawer);
+  if (docsDrawerBackdrop) docsDrawerBackdrop.addEventListener("click", closeDrawer);
+
+  // Patch openItem to update topbar label + close drawer on mobile
+  var _origOpenItem = openItem;
+  openItem = function (item) {
+    _origOpenItem(item);
+    if (docsTopbarLabel) docsTopbarLabel.textContent = item.title;
+    closeDrawer();
+  };
+
+  // Collapsible sidebar sections
+  document.querySelectorAll(".sidebar-section-label[data-target]").forEach(function (btn) {
+    var targetId = btn.getAttribute("data-target");
+    var items = document.getElementById(targetId);
+    var storageKey = "lbm.sidebar.collapsed." + targetId;
+
+    if (localStorage.getItem(storageKey) === "1") {
+      btn.setAttribute("aria-expanded", "false");
+      items.classList.add("collapsed");
+    }
+
+    btn.addEventListener("click", function () {
+      var collapsed = items.classList.toggle("collapsed");
+      btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      localStorage.setItem(storageKey, collapsed ? "1" : "0");
+    });
+  });
 })();
