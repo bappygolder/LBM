@@ -326,10 +326,75 @@ window.MCCProjectData = {
         source: "user-requested",
         recommendedBy: "Vision Roadmap",
         references: ["docs/VISION_AND_PHILOSOPHY.md"]
+      },
+      {
+        id: "LBM-S001",
+        title: "Remove legacy Mac Control Center task references from seed data",
+        notes: "Tasks MCC-004 through MCC-016 reference a macOS app (MacControlCenter) that is unrelated to LBM. These should be deleted from the seed data or replaced with LBM-relevant backlog items before public release.",
+        lane: "newly-added-or-updated",
+        priority: "P1",
+        area: "docs",
+        source: "recommended",
+        recommendedBy: "Claude Sonnet 4.6",
+        references: ["data/project-data.js"]
+      },
+      {
+        id: "LBM-S002",
+        title: "Add screenshots and visual walkthrough to README and docs",
+        notes: "There are no screenshots of the running app. Add at least one screenshot of List View, Board View, and the Detail Panel to the README and/or a new docs/SCREENSHOTS.md. This is the most impactful thing for first-time users evaluating the project.",
+        lane: "newly-added-or-updated",
+        priority: "P1",
+        area: "docs",
+        source: "recommended",
+        recommendedBy: "Claude Sonnet 4.6",
+        references: ["README.md", "docs/SETUP_GUIDE.md"]
+      },
+      {
+        id: "LBM-S003",
+        title: "Cross-browser compatibility testing",
+        notes: "Test the full app (List View, Board View, Detail Panel, Docs tab, Resources tab) in Chrome, Firefox, and Safari. Document any inconsistencies. The drag-and-drop system and contenteditable notes editor are the most likely failure points across browsers.",
+        lane: "newly-added-or-updated",
+        priority: "P1",
+        area: "release",
+        source: "recommended",
+        recommendedBy: "Claude Sonnet 4.6",
+        references: []
+      },
+      {
+        id: "LBM-S004",
+        title: "Verify all internal doc links are correct",
+        notes: "The README and several docs reference each other by relative path. After the docs reorganisation, do a link audit: open each linked file from the Docs tab and from the README to confirm nothing is broken.",
+        lane: "newly-added-or-updated",
+        priority: "P2",
+        area: "docs",
+        source: "recommended",
+        recommendedBy: "Claude Sonnet 4.6",
+        references: ["README.md", "data/project-data.js"]
+      },
+      {
+        id: "LBM-S005",
+        title: "Create CONTRIBUTING.md for open-source handoff",
+        notes: "Before making this repo public, write a short CONTRIBUTING.md covering: how to run the app locally, how to add a feature (point to SKILL.md), how to add a keyboard shortcut (point to SKILL_ADD_SHORTCUT.md), how to submit a PR, and code style conventions (vanilla JS, no build step, dark-only CSS).",
+        lane: "backlog",
+        priority: "P2",
+        area: "docs",
+        source: "recommended",
+        recommendedBy: "Claude Sonnet 4.6",
+        references: ["SKILL.md", "SKILL_ADD_SHORTCUT.md"]
       }
     ]
   },
   docs: [
+    {
+      title: "Setup Guide",
+      summary: "First-time setup and customisation: get from zero to a working install in five minutes.",
+      path: "docs/SETUP_GUIDE.md"
+    },
+    {
+      title: "AI Development Guide",
+      summary: "Working with Claude Code: token conservation, model recommendations, the 5-location shortcut rule, and feedback loops.",
+      path: "docs/AI_DEVELOPMENT_GUIDE.md"
+    },
     {
       title: "Vision and Philosophy",
       summary: "The overarching vision, three-tier rollout strategy (LBM/OBM/Agency), and the AI-in-a-box philosophy.",
@@ -337,12 +402,12 @@ window.MCCProjectData = {
     },
     {
       title: "Persistence and State",
-      summary: "What data lives where: localStorage, seed data, and sync behaviour.",
+      summary: "What data lives where: localStorage, seed data, reset behaviour, and how to share changes.",
       path: "docs/PERSISTENCE_AND_STATE.md"
     },
     {
       title: "Local Project System",
-      summary: "How the local tracker, docs hub, and online sync habit should work together.",
+      summary: "How the local tracker, docs hub, and seed data work together. How to add tasks, docs, and skills.",
       path: "docs/LOCAL_PROJECT_SYSTEM.md"
     },
     {
@@ -351,17 +416,22 @@ window.MCCProjectData = {
       path: "docs/KEYBOARD_SHORTCUTS.md"
     },
     {
-      title: "LBM Development Guide",
-      summary: "How to add features, update styles, and extend the task tracker.",
-      path: "SKILL.md"
-    },
-    {
       title: "Phase Handover Plan",
       summary: "Phased build plan with copy-paste prompts for each context window.",
       path: "PHASES.md"
     }
   ],
   skills: [
+    {
+      title: "LBM Development Guide",
+      summary: "How to add features, update styles, and extend the task tracker.",
+      path: "SKILL.md"
+    },
+    {
+      title: "Add a Keyboard Shortcut",
+      summary: "Step-by-step process for adding any keyboard shortcut to LBM — covers all 5 locations that must be updated.",
+      path: "SKILL_ADD_SHORTCUT.md"
+    },
     {
       title: "Front-End Design Skill",
       summary: "Design reference for all CSS and UI work: type scale, spacing grid, color system, component patterns, motion rules, and accessibility — drawn from Linear, shadcn/ui, Material Design 3, and Apple HIG.",

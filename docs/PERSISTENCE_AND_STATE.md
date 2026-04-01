@@ -1,73 +1,90 @@
 # Persistence and State
 
-This project has three different persistence layers, and they behave differently.
+The Local Business Manager has two persistence layers. Understanding them prevents confusion about where your data is and why changes may or may not be visible to others.
 
-## 1. App Configuration
+---
 
-### Stored In
-
-- `~/Library/Application Support/MacControlCenter/config.json`
-
-### Contains
-
-- Action names
-- Shortcut keys
-- Action types
-- Action targets
-
-### Sync Behavior
-
-- Local to the current macOS user account
-- Not committed to the repo
-- Not automatically shared across machines
-
-## 2. App Preferences
+## 1. Seed Data (Git-tracked Baseline)
 
 ### Stored In
 
-- macOS `UserDefaults`
+- `data/project-data.js` — committed to the git repository
 
 ### Contains
 
-- view mode
-- always-on-top state
-- show-on-all-desktops state
-- opacity
-- launch-at-login preference
+- Project metadata (name, areas, seed version)
+- The initial/baseline backlog of tasks
+- The docs index (which files appear in the Docs tab)
+- The skills index (which skill files appear in the Skills section)
 
-### Sync Behavior
+### Sync Behaviour
 
-- Local to the current machine/user
-- Not visible in git
-- Not automatically shared unless the OS syncs preferences externally
+- Anyone who clones or copies the repo gets this data
+- Changes require editing `data/project-data.js` and committing
+- These are the "official" tasks — the source of truth for the project baseline
 
-## 3. Local Business Manager State
+---
+
+## 2. Browser Local State (Per-machine, Per-browser)
 
 ### Stored In
 
-- Repo seed data in `TaskTracker/project-data.js`
-- Browser-local working state in `localStorage`
+- `localStorage` in the user's browser
+- Storage key: `ltm-task-tracker-v1`
 
 ### Contains
 
-- Seed backlog and docs metadata from the repo
-- Personal edits made in the browser after loading the tracker
+- All tasks created or edited in the browser UI after the initial load
+- UI preferences: collapsed board columns (`ui.collapsedColumns`), list sort (`ui.listSort`)
+- Confirm-dialog preferences (e.g. `lbm_skipDeleteConfirm`)
+- The editable project title (if changed via the header)
 
-### Sync Behavior
+### Sync Behaviour
 
-- Repo seed data syncs through git when committed
-- Browser edits do not update the repo automatically
-- Browser edits do not update an online tracker automatically
-- To share tracker changes, export them and then copy them into the online system or commit them back into repo-managed seed data
+- Completely local to that browser on that machine
+- Not committed to git automatically
+- Not shared across devices or users
+- Survives page refreshes within the same browser
+- Lost if the user clears browser data or opens the app in a different browser
 
-## Practical Answer
+---
 
-If you add a new item in the local tracker UI, it will persist in that browser on that machine, but it will not automatically update "across the board." Cross-device or online sync needs an explicit export/import or a dedicated sync integration.
+## What Happens on First Load
 
-## Recommended Source of Truth
+When a user opens `index.html` for the first time in a new browser:
 
-Use this split:
+1. No `localStorage` data exists yet
+2. The app reads `data/project-data.js` and loads the seed tasks
+3. From that point on, changes are saved to `localStorage`
 
-- Repo files for durable baseline tasks, docs, and audit-driven backlog
-- Browser local state for fast personal working changes
-- Online tracker for broader team visibility only after export or manual sync
+The seed data is **only loaded once** per browser (on first run or after a reset).
+
+---
+
+## Resetting to Seed
+
+To wipe local changes and reload from the git-tracked baseline:
+
+1. Click the **ⓘ** info button in the app header
+2. Click **Reset to Seed**
+
+This clears the `localStorage` task data and reloads the seed tasks from `data/project-data.js`.
+
+---
+
+## Sharing Changes Across Machines
+
+Because browser state is local, sharing requires an explicit step:
+
+| Goal | How |
+|---|---|
+| Share a task with a teammate | Export JSON → send the file → they import it |
+| Make a task permanent for all users | Edit `data/project-data.js` and commit |
+| Back up your local work | Export JSON or Markdown from the ⓘ info panel |
+
+---
+
+## Practical Summary
+
+> Add tasks in the browser for personal working notes.  
+> Commit changes to `data/project-data.js` when a task should be visible to everyone who opens the app fresh.
