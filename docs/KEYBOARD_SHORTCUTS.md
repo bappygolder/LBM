@@ -6,7 +6,7 @@ Shortcuts in the LBM follow a single rule: **do what the user will naturally rea
 
 - `Escape` always dismisses, closes, or clears — in every context, in that priority order.
 - `Delete` and `Backspace` both delete. A user reaching for either should get the same result.
-- `D` is a speed shortcut for power users — it mirrors what `Delete`/`Backspace` do.
+- `D` navigates to the Docs tab from anywhere. `Delete` and `Backspace` are the primary delete keys. `Shift+D` is a secondary delete shortcut for power users.
 - Arrow keys navigate. `Enter` opens/confirms. These never need explaining.
 - Letter shortcuts (`N`, `?`, `/`) are single-key actions that don't conflict with text input because they are blocked while a field is focused.
 
@@ -16,6 +16,21 @@ If a new action is added and there is an obvious key a user would press, use tha
 
 > Shortcuts are active when no text field, textarea, or notes editor is focused.
 > `Ctrl+N` and `Escape` always work regardless of focus.
+
+---
+
+## Tab Navigation
+
+Works on every page.
+
+| Action | Key |
+|---|---|
+| Go to Actions | `A` |
+| Go to Docs | `D` |
+| Go to Resources | `R` |
+| Open / close menu | `M` |
+| Switch to List view | `L` |
+| Switch to Board view | `B` |
 
 ---
 
@@ -43,7 +58,7 @@ If a new action is added and there is an obvious key a user would press, use tha
 | Scroll page down | `Shift+↓` |
 | Scroll page up | `Shift+↑` |
 | Open focused task | `Enter` |
-| Delete focused task (Cmd+Z to undo) | `D` |
+| Delete focused task (Cmd+Z to undo) | `Delete` · `⌫` · `Shift+D` |
 | Jump to last deleted position | `←` / `→` |
 | Clear row focus | `Esc` |
 
@@ -53,7 +68,7 @@ If a new action is added and there is an obvious key a user would press, use tha
 
 | Action | Key |
 |---|---|
-| Delete this task (Cmd+Z to undo) | `D` |
+| Delete this task (Cmd+Z to undo) | `Delete` · `⌫` · `Shift+D` |
 | Close panel | `Esc` |
 
 ### Notes Editor
@@ -90,7 +105,7 @@ when you explicitly dismiss it.
 |---|---|
 | Start selection | Click and drag on empty space |
 | Toggle item in/out of selection | Click a task while items are selected |
-| Delete all selected | `Delete` · `Backspace` · `D` (or click Delete in the action bar) |
+| Delete all selected | `Delete` · `Backspace` · `Shift+D` (or click Delete in the action bar) |
 | Drag selected tasks to new position | Drag any selected task — all move together |
 | Move selected cards to another column | Drag any selected card to the target column |
 | Dismiss selection (slow dissolve) | `Esc` · click × in the action bar · click on empty space |

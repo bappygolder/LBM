@@ -77,4 +77,4 @@ These words automatically select the correct Area:
 - You can always edit the inferred values before saving
 - If the title picks up extra words, click the field and edit directly — the inferred urgency/area selections stay
 - Say the task title only — notes and other details are better typed manually
-- For longer, structured tasks, use Claude instead: "Add this to the task board: [description]" — Claude infers all fields and generates a console command. See [AI Task Creation](docs/AI_TASK_CREATION.md).
+- For longer, structured tasks, use Claude instead: "Add this to the task board: [description]" — Claude infers all fields and generates a console command. See [AI Task Creation](docs.html?doc=docs/AI_TASK_CREATION.md).

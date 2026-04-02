@@ -12,6 +12,7 @@
   const docsMaintainedBy = document.getElementById("docsMaintainedBy");
   const docsNav = document.getElementById("docsNav");
   const skillsNav = document.getElementById("skillsNav");
+  const roadmapsNav = document.getElementById("roadmapsNav");
   const viewerType = document.getElementById("viewerType");
   const viewerTitle = document.getElementById("viewerTitle");
   const viewerSummary = document.getElementById("viewerSummary");
@@ -22,6 +23,7 @@
   const editDocBtn = document.getElementById("editDocBtn");
   const downloadDocBtn = document.getElementById("downloadDocBtn");
   const deleteDocBtn = document.getElementById("deleteDocBtn");
+  const docPagination = document.getElementById("docPagination");
 
   const CUSTOM_DOCS_KEY = "lbm.custom.docs";
 
@@ -50,6 +52,9 @@
   const skillItems = data.skills.map(function (item) {
     return Object.assign({ group: "Skill" }, item);
   });
+  const roadmapItems = (data.roadmaps || []).map(function (item) {
+    return Object.assign({ group: "Roadmap" }, item);
+  });
 
   // Load custom docs from localStorage and append to appropriate list
   var customDocs = loadStoredCustomDocs();
@@ -60,9 +65,96 @@
 
   renderNav(docsNav, docItems);
   renderNav(skillsNav, skillItems);
-  if (docItems.length) {
-    openItem(docItems[0]);
+  renderNav(roadmapsNav, roadmapItems);
+
+  // ── Sidebar search ───────────────────────────────────────────────────────────
+
+  var sidebarSearch = document.getElementById("sidebarSearch");
+  var sidebarSearchClear = document.getElementById("sidebarSearchClear");
+
+  function allItems() {
+    return docItems.concat(skillItems).concat(roadmapItems);
   }
+
+  function applySearch(query) {
+    var q = query.trim().toLowerCase();
+    allItems().forEach(function (item) {
+      if (!item._button) return;
+      var match = !q || item.title.toLowerCase().indexOf(q) !== -1 ||
+        (item.summary && item.summary.toLowerCase().indexOf(q) !== -1);
+      item._button.style.display = match ? "" : "none";
+    });
+    // Hide section labels when all items in that section are hidden
+    document.querySelectorAll(".sidebar-section").forEach(function (section) {
+      var btns = section.querySelectorAll(".nav-item");
+      var anyVisible = Array.prototype.some.call(btns, function (b) { return b.style.display !== "none"; });
+      section.style.display = anyVisible ? "" : "none";
+    });
+    if (sidebarSearchClear) sidebarSearchClear.hidden = !q;
+  }
+
+  if (sidebarSearch) {
+    sidebarSearch.addEventListener("input", function () {
+      applySearch(sidebarSearch.value);
+    });
+    sidebarSearch.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        sidebarSearch.value = "";
+        applySearch("");
+        sidebarSearch.blur();
+      }
+    });
+  }
+
+  if (sidebarSearchClear) {
+    sidebarSearchClear.addEventListener("click", function () {
+      sidebarSearch.value = "";
+      applySearch("");
+      sidebarSearch.focus();
+    });
+  }
+
+  // ── Arrow key navigation (left = prev, right = next across all docs) ─────────
+
+  document.addEventListener("keydown", function (e) {
+    // Don't fire when typing in any input/textarea
+    var tag = document.activeElement && document.activeElement.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable) return;
+
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+
+    var all = allItems().filter(function (item) { return item._button && item._button.style.display !== "none"; });
+    if (!all.length || !currentItem) return;
+
+    var idx = all.indexOf(currentItem);
+    var target = null;
+
+    if (e.key === "ArrowLeft" && idx > 0) {
+      target = all[idx - 1];
+    } else if (e.key === "ArrowRight" && idx < all.length - 1) {
+      target = all[idx + 1];
+    }
+
+    if (target) {
+      e.preventDefault();
+      openItem(target);
+      // Scroll the active nav item into view in the sidebar
+      if (target._button) target._button.scrollIntoView({ block: "nearest" });
+    }
+  });
+
+  // ── URL routing: support ?doc=path to deep-link directly to a doc ────────────
+  (function openInitialDoc() {
+    var params = new URLSearchParams(window.location.search);
+    var docParam = params.get("doc");
+    var allItems = docItems.concat(skillItems).concat(roadmapItems);
+    var target = null;
+    if (docParam) {
+      target = allItems.find(function (item) { return item.path === docParam; }) || null;
+    }
+    if (!target && docItems.length) target = docItems[0];
+    if (target) openItem(target);
+  })();
 
   // ── Nav rendering ────────────────────────────────────────────────────────────
 
@@ -88,7 +180,7 @@
 
   function openItem(item) {
     currentItem = item;
-    docItems.concat(skillItems).forEach(function (entry) {
+    docItems.concat(skillItems).concat(roadmapItems).forEach(function (entry) {
       if (entry._button) {
         entry._button.classList.toggle("active", entry === item);
       }
@@ -115,6 +207,58 @@
         "<p>No embedded preview is available for this file yet.</p>" +
         '<p><a href="' + escapeAttr(item.path) + '">Open the raw file</a>.</p>';
     }
+
+    renderPagination(item);
+  }
+
+  // ── Prev / Next pagination ────────────────────────────────────────────────────
+
+  function renderPagination(item) {
+    if (!docPagination) return;
+    var list = item.group === "Skill" ? skillItems : item.group === "Roadmap" ? roadmapItems : docItems;
+    var idx = list.indexOf(item);
+    var prev = idx > 0 ? list[idx - 1] : null;
+    var next = idx < list.length - 1 ? list[idx + 1] : null;
+
+    if (!prev && !next) {
+      docPagination.style.display = "none";
+      docPagination.innerHTML = "";
+      return;
+    }
+
+    docPagination.style.display = "flex";
+    var parts = [];
+
+    if (prev) {
+      parts.push(
+        '<button class="doc-pagination-btn doc-pagination-btn--prev" data-idx="' + (idx - 1) + '" data-group="' + escapeAttr(item.group) + '" type="button">' +
+        '<span class="doc-pagination-label">Previous</span>' +
+        '<span class="doc-pagination-title">' + escapeHtml(prev.title) + '</span>' +
+        '</button>'
+      );
+    } else {
+      parts.push('<span style="flex:1"></span>');
+    }
+
+    if (next) {
+      parts.push(
+        '<button class="doc-pagination-btn doc-pagination-btn--next" data-idx="' + (idx + 1) + '" data-group="' + escapeAttr(item.group) + '" type="button">' +
+        '<span class="doc-pagination-label">Next</span>' +
+        '<span class="doc-pagination-title">' + escapeHtml(next.title) + '</span>' +
+        '</button>'
+      );
+    }
+
+    docPagination.innerHTML = parts.join("");
+
+    docPagination.querySelectorAll(".doc-pagination-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var i = parseInt(btn.getAttribute("data-idx"), 10);
+        var grp = btn.getAttribute("data-group");
+        var targetList = grp === "Skill" ? skillItems : docItems;
+        if (targetList[i]) openItem(targetList[i]);
+      });
+    });
   }
 
   // ── Edit / Delete / Download handlers ───────────────────────────────────────
@@ -344,7 +488,7 @@
 
     function flushTable() {
       if (!tableRows.length) return;
-      var parts = ["<table>"];
+      var parts = ['<div class="table-scroll"><table>'];
       tableRows.forEach(function (row, idx) {
         if (idx === 0) {
           parts.push("<thead><tr>");
@@ -356,7 +500,7 @@
           parts.push("</tr>");
         }
       });
-      parts.push("</tbody></table>");
+      parts.push("</tbody></table></div>");
       html.push(parts.join(""));
       tableRows = [];
     }

@@ -13,9 +13,9 @@ The user says something like:
 
 ---
 
-## The 5 locations — touch all of them
+## The 6 locations — touch all of them
 
-Every new shortcut must be added to **all five** of these locations. Missing any one creates an inconsistency.
+Every new shortcut must be added to **all six** of these locations. Missing any one creates an inconsistency.
 
 | # | File | What to update |
 |---|---|---|
@@ -24,6 +24,7 @@ Every new shortcut must be added to **all five** of these locations. Missing any
 | 3 | `index.html` | Add a `<div class="shortcuts-row">` in the right group in `#shortcutsPanel` |
 | 4 | `docs/KEYBOARD_SHORTCUTS.md` | Add a row to the right table |
 | 5 | `data/docs-content.js` | Mirror the change from step 4 (it's a pre-rendered cache) |
+| 6 | Visible UI element (if applicable) | Add `<span class="shortcut-tooltip">` inside the button or link |
 
 ---
 
@@ -115,6 +116,36 @@ The format is an array of strings joined with `\n`. Each markdown line is one st
 
 ---
 
+### Step 6 — Add tooltip to visible UI element (if applicable)
+
+If the shortcut is bound to a **visible, interactive element** (a tab link, a toolbar button, a view toggle, etc.), add a `.shortcut-tooltip` span as the **last child** inside that element so the shortcut is discoverable on hover.
+
+**Rules:**
+- The parent element must have `position: relative`. All `.tab` links already do. For other elements (e.g. `.view-button`), add `position: relative` in `styles.css`.
+- Tooltip text format: brief action label + one or more `<kbd>` elements.
+- Skip this step for shortcuts with no corresponding interactive UI element (e.g. arrow-key navigation, `Esc`, scroll).
+- If the shortcut is on a tab or button that exists on **multiple pages** (e.g. all three HTML files), add the tooltip to all of them.
+
+**Single-key example:**
+```html
+<button class="view-button">
+  List View
+  <span class="shortcut-tooltip">List view <kbd>L</kbd></span>
+</button>
+```
+
+**Multi-key example (two `<kbd>` elements):**
+```html
+<a class="tab" href="docs.html">
+  Docs
+  <span class="shortcut-tooltip">Go to Docs <kbd>Shift</kbd><kbd>D</kbd></span>
+</a>
+```
+
+The `.shortcut-tooltip` component is defined in `styles.css` under the `/* ─── Shortcut tooltip */` comment. It handles all positioning, animation, and kbd styling — no extra CSS needed for most shortcuts.
+
+---
+
 ## Checklist before finishing
 
 - [ ] Key handler added in `task-app.js` with correct context guard
@@ -123,6 +154,7 @@ The format is an array of strings joined with `\n`. Each markdown line is one st
 - [ ] `index.html` shortcuts panel has the new row in the right group
 - [ ] `docs/KEYBOARD_SHORTCUTS.md` table updated
 - [ ] `data/docs-content.js` cache updated to match the markdown
+- [ ] If shortcut maps to a visible interactive element: `.shortcut-tooltip` added to that element (and all pages it appears on)
 
 ---
 

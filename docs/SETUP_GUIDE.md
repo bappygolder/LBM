@@ -19,13 +19,16 @@ LBM is a self-contained folder. No build step, no dependencies, no accounts.
 **To use it for a new project:**
 
 1. Copy the entire `1_LBM_Local_Business_Manager` folder into your project (or anywhere on your computer)
-2. Open `data/project-data.js` in any text editor and set your `name`, `fullName`, and `maintainedBy` fields
-3. Open `index.html` in your browser
-4. Click the **ⓘ** icon in the header and choose **Reset to Seed**
+2. Open `index.html` in your browser
+3. **Click the project name in the header** to rename it inline — no file editing needed
+4. Click **ⓘ** in the header → find **Storage key** at the bottom → click **Change** → type a unique name for this project → **Save & reload**
+5. Once reloaded, click **ⓘ** again → **Reset to Seed** to start from a clean slate
 
-That's it. Your tracker is now configured for your project, seeded with your own tasks, and ready to use.
+That's it. Your tracker is now isolated from any other LBM instance and ready to use.
 
-> **Why reset?** If you copy LBM into a new project, your browser may still have task data from the previous project saved in `localStorage`. Resetting clears that and loads cleanly from your updated seed file. An undo banner appears immediately so you can reverse it within the same session if needed.
+> **Why set a unique storage key?** If you have two copies of LBM open in the same browser, they share `localStorage` — meaning their tasks can bleed into each other. Giving each copy its own key keeps them completely isolated. The app remembers your choice per folder path, so you only need to set it once.
+>
+> **Why reset?** Resetting loads cleanly from the seed data in `data/project-data.js`. An undo banner appears immediately so you can reverse if needed.
 
 ---
 
@@ -95,6 +98,12 @@ The **Docs** tab in the navigation header opens a documentation viewer with all 
 
 ## Customise the Project Name
 
+**Quickest way — no file editing needed:**
+
+Click the project name in the app header. It becomes editable inline. Type your new name and press Enter (or click away). The name saves to your browser immediately.
+
+**To bake the name into the git-tracked file** (so others who clone the repo also see it):
+
 Open `data/project-data.js` in any text editor (Notepad, TextEdit, VS Code — anything works).
 
 Find this section near the top and update it:
@@ -148,7 +157,7 @@ Replace the sample tasks with your own backlog, or clear it for a blank start:
 tasks: []
 ```
 
-> **What is seed data?** Seed tasks are the git-committed baseline. Tasks you create in the browser are saved to `localStorage` and stay personal to that browser. See [Persistence and State](PERSISTENCE_AND_STATE.md) for the full explanation.
+> **What is seed data?** Seed tasks are the git-committed baseline. Tasks you create in the browser are saved to `localStorage` and stay personal to that browser. See [Persistence and State](docs.html?doc=docs/PERSISTENCE_AND_STATE.md) for the full explanation.
 
 ---
 

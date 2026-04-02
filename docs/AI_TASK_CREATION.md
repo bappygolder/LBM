@@ -61,7 +61,7 @@ Claude reads `SKILL_ADD_TASK.md`, infers urgency/value/area from context, and ge
 
 Click the **microphone button** next to the Title field in the New Task modal. Speak your task — the title auto-fills and urgency/area are inferred from keywords in your speech.
 
-See [Voice Commands](docs/VOICE_COMMANDS.md) for the full guide.
+See [Voice Commands](docs.html?doc=docs/VOICE_COMMANDS.md) for the full guide.
 
 ---
 
@@ -154,4 +154,4 @@ window.LBM.addTask({
 
 LBM can receive tasks from any Claude Code session — you don't need to be working inside the LBM workspace.
 
-See [Claude Integration Guide](CLAUDE_INTEGRATION_GUIDE.md) for the two-tab workflow and full instructions.
+See [Claude Integration Guide](docs.html?doc=CLAUDE_INTEGRATION_GUIDE.md) for the two-tab workflow and full instructions.

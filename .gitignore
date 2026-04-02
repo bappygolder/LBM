@@ -1,0 +1,4 @@
+# private/ is currently tracked in version control (publicly visible).
+# When this project grows and privacy becomes a priority, move this folder
+# to a private repo and uncomment the line below:
+# private/

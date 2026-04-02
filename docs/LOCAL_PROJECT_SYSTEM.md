@@ -66,7 +66,7 @@ This keeps human-requested work distinct from AI-suggested work and makes the pr
 2. Add an entry to the `docs` array in `data/project-data.js`
 3. Add the cached content to `data/docs-content.js`
 
-The Docs tab will pick it up automatically. See [AI Development Guide](AI_DEVELOPMENT_GUIDE.md) for the full step-by-step.
+The Docs tab will pick it up automatically. See [AI Development Guide](docs.html?doc=docs/AI_DEVELOPMENT_GUIDE.md) for the full step-by-step.
 
 ---
 

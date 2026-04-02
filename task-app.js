@@ -153,6 +153,12 @@
     exportMarkdownButton: document.getElementById("exportMarkdownButton"),
     resetButton:        document.getElementById("resetButton"),
     seedNotice:         document.getElementById("seedNotice"),
+    storageKeyValue:    document.getElementById("storageKeyValue"),
+    storageKeyEditor:   document.getElementById("storageKeyEditor"),
+    storageKeyInput:    document.getElementById("storageKeyInput"),
+    storageKeyChangeBtn: document.getElementById("storageKeyChangeBtn"),
+    storageKeySaveBtn:  document.getElementById("storageKeySaveBtn"),
+    storageKeyCancelBtn: document.getElementById("storageKeyCancelBtn"),
 
     listViewButton:     document.getElementById("listViewButton"),
     boardViewButton:    document.getElementById("boardViewButton"),
@@ -446,6 +452,33 @@
     el.exportJsonButton.addEventListener("click", exportJson);
     el.exportMarkdownButton.addEventListener("click", exportMarkdown);
     el.resetButton.addEventListener("click", resetToSeed);
+
+    // Storage key
+    if (el.storageKeyValue) el.storageKeyValue.textContent = STORAGE_KEY;
+    if (el.storageKeyChangeBtn) {
+      el.storageKeyChangeBtn.addEventListener("click", function () {
+        el.storageKeyInput.value = STORAGE_KEY;
+        el.storageKeyEditor.hidden = false;
+        el.storageKeyChangeBtn.hidden = true;
+        el.storageKeyValue.hidden = true;
+        el.storageKeyInput.focus();
+        el.storageKeyInput.select();
+      });
+    }
+    if (el.storageKeyCancelBtn) {
+      el.storageKeyCancelBtn.addEventListener("click", function () {
+        el.storageKeyEditor.hidden = true;
+        el.storageKeyChangeBtn.hidden = false;
+        el.storageKeyValue.hidden = false;
+      });
+    }
+    if (el.storageKeySaveBtn) el.storageKeySaveBtn.addEventListener("click", saveStorageKey);
+    if (el.storageKeyInput) {
+      el.storageKeyInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") saveStorageKey();
+        if (e.key === "Escape") el.storageKeyCancelBtn.click();
+      });
+    }
 
     // View tabs
     el.listViewButton.addEventListener("click", () => setView("list"));
@@ -770,7 +803,7 @@
       if (e.key === "Delete" || e.key === "Backspace") {
         if (selectedTaskIds.size > 0) { e.preventDefault(); bulkDeleteSelected(); return; }
       }
-      if (e.key === "d" || e.key === "D") {
+      if ((e.key === "d" || e.key === "D") && e.shiftKey) {
         // Bulk delete when items are selected via lasso
         if (selectedTaskIds.size > 0) { e.preventDefault(); bulkDeleteSelected(); return; }
         if (!el.detailOverlay.hidden && detailTaskId) {
@@ -793,6 +826,9 @@
           confirmDelete(() => deleteTask(tid));
         }
       }
+      // View switching
+      if (e.key === "l" || e.key === "L") { e.preventDefault(); setView("list"); return; }
+      if (e.key === "b" || e.key === "B") { e.preventDefault(); setView("board"); return; }
     });
   }
 
@@ -1327,6 +1363,30 @@
   }
 
   /* ── Info panel ─────────────────────────────────────────────────────────────── */
+
+  function saveStorageKey() {
+    const raw = el.storageKeyInput.value.trim();
+    // Allow letters, numbers, hyphens, underscores only
+    const newKey = raw.replace(/[^a-zA-Z0-9_-]/g, "-").replace(/-{2,}/g, "-").replace(/^-|-$/g, "");
+    if (!newKey || newKey === STORAGE_KEY) {
+      el.storageKeyCancelBtn.click();
+      return;
+    }
+    // Migrate all data from old key to new key
+    const oldData = localStorage.getItem(STORAGE_KEY);
+    if (oldData) localStorage.setItem(newKey, oldData);
+    localStorage.removeItem(STORAGE_KEY);
+    // Migrate project name
+    const oldNameKey = STORAGE_KEY + "-project-name";
+    const oldName = localStorage.getItem(oldNameKey);
+    if (oldName) localStorage.setItem(newKey + "-project-name", oldName);
+    localStorage.removeItem(oldNameKey);
+    // Persist the choice for this page path so it survives reloads
+    try {
+      localStorage.setItem("lbm-path-key:" + window.location.pathname, newKey);
+    } catch (_) {}
+    window.location.reload();
+  }
 
   function toggleInfo() {
     const nextHidden = !el.infoDrawer.hidden;
@@ -3390,6 +3450,10 @@
   /* ── App menu helpers (toggle owned by header.js, these are convenience wrappers) */
 
   function closeAppMenu() {
+    if (window._lbmAppMenu && window._lbmAppMenu.closeMenu) {
+      window._lbmAppMenu.closeMenu();
+      return;
+    }
     if (el.appMenuDropdown) el.appMenuDropdown.hidden = true;
     if (el.appMenuBtn) {
       el.appMenuBtn.setAttribute("aria-expanded", "false");

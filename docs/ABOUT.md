@@ -107,4 +107,4 @@ This is **LBM v1** — a stable, self-contained release with full documentation 
 
 ## Getting Started
 
-New here? The [Setup Guide](docs/SETUP_GUIDE.md) has everything you need — including a non-technical installation path that takes less than two minutes.
+New here? The [Setup Guide](docs.html?doc=docs/SETUP_GUIDE.md) has everything you need — including a non-technical installation path that takes less than two minutes.

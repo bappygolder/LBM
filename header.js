@@ -7,6 +7,17 @@
 (function () {
   "use strict";
 
+  // Resolve a path-specific custom storage key before task-app.js reads it.
+  // This runs synchronously (defer scripts execute in order), so the patched
+  // value is visible when task-app.js assigns: const STORAGE_KEY = tracker.storageKey
+  try {
+    var pd = window.MCCProjectData;
+    if (pd && pd.tracker) {
+      var customKey = localStorage.getItem("lbm-path-key:" + window.location.pathname);
+      if (customKey) pd.tracker.storageKey = customKey;
+    }
+  } catch (_) {}
+
   function storageKey() {
     var pd = window.MCCProjectData;
     return ((pd && pd.tracker && pd.tracker.storageKey) || "ltm-task-tracker-v1") + "-project-name";
@@ -49,6 +60,7 @@
     function place(index, instant) {
       var m = measure(index);
       if (instant) indicator.classList.add("instant");
+      else indicator.classList.remove("instant");
       indicator.style.left = m.left + "px";
       indicator.style.width = m.width + "px";
       indicator.style.height = m.height + "px";
@@ -65,7 +77,6 @@
     // Then slide to current tab
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
-        indicator.classList.remove("instant");
         place(activeIndex, false);
       });
     });
@@ -76,6 +87,18 @@
         sessionStorage.setItem(PREV_KEY, activeIndex);
       });
     });
+
+    // Expose indicator API for app menu to slide indicator to/from menu tab
+    var menuIndex = -1;
+    tabs.forEach(function (tab, i) {
+      if (tab.classList.contains("tab-menu")) menuIndex = i;
+    });
+    if (menuIndex !== -1) {
+      window._lbmTabIndicator = {
+        slideToMenu:   function () { place(menuIndex, false); },
+        slideToActive: function () { place(activeIndex, false); }
+      };
+    }
   }
 
   // ── Page transition (exit on tab click, enter via CSS animation) ─────────────
@@ -159,16 +182,22 @@
 
     if (!btn || !dropdown) return;
 
+    var wrap = document.getElementById("appMenuWrap");
+
     function openMenu() {
       dropdown.hidden = false;
       btn.setAttribute("aria-expanded", "true");
       btn.classList.add("is-open");
+      if (wrap) wrap.classList.add("is-open");
+      if (window._lbmTabIndicator) window._lbmTabIndicator.slideToMenu();
     }
 
     function closeMenu() {
       dropdown.hidden = true;
       btn.setAttribute("aria-expanded", "false");
       btn.classList.remove("is-open");
+      if (wrap) wrap.classList.remove("is-open");
+      if (window._lbmTabIndicator) window._lbmTabIndicator.slideToActive();
       if (seedInfoPanel) seedInfoPanel.hidden = true;
       if (seedInfoBtn) { seedInfoBtn.setAttribute("aria-expanded", "false"); seedInfoBtn.classList.remove("is-active"); }
     }
@@ -321,7 +350,8 @@
     window._lbmAppMenu = {
       openResetModal:   openResetModal,
       closeResetModal:  closeResetModal,
-      createUndoBanner: createUndoBanner
+      createUndoBanner: createUndoBanner,
+      closeMenu:        closeMenu
     };
   }
 
@@ -365,6 +395,72 @@
     document.addEventListener("keydown", resetUndoKeyHandler);
   }
 
+  // ── Tab navigation keyboard shortcuts ────────────────────────────────────────
+  // A → Actions  |  D → Docs  |  R → Resources
+  // L → List view  |  B → Board view  (navigate to Actions if not already there)
+  // Works on every page. Simulates a tab click so page transitions fire normally.
+  function initTabShortcuts() {
+    var isIndexPage = !!document.getElementById("taskList");
+
+    // Patch localStorage state.ui.view and navigate to Actions page
+    function navigateToView(view) {
+      try {
+        var pd = window.MCCProjectData;
+        var key = (pd && pd.tracker && pd.tracker.storageKey) || "lbm-local-task-tracker";
+        var customKey = localStorage.getItem("lbm-path-key:" + window.location.pathname);
+        if (customKey) key = customKey;
+        var raw = localStorage.getItem(key);
+        var state = raw ? JSON.parse(raw) : {};
+        if (!state.ui) state.ui = {};
+        state.ui.view = view;
+        localStorage.setItem(key, JSON.stringify(state));
+      } catch (_) {}
+      var actionsTab = document.querySelector("nav.tabs a.tab[href=\"index.html\"]");
+      if (actionsTab) { actionsTab.click(); return; }
+      window.location.href = "index.html";
+    }
+
+    document.addEventListener("keydown", function (e) {
+      var tag = document.activeElement ? document.activeElement.tagName : "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || (document.activeElement && document.activeElement.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey) return;
+
+      // Menu shortcut — M toggles the app menu
+      if (!e.shiftKey && (e.key === "m" || e.key === "M")) {
+        var menuBtn = document.getElementById("appMenuBtn");
+        if (menuBtn) { e.preventDefault(); menuBtn.click(); }
+        return;
+      }
+
+      // Tab shortcuts
+      var href = null;
+      if (!e.shiftKey && (e.key === "a" || e.key === "A")) href = "index.html";
+      if (!e.shiftKey && (e.key === "d" || e.key === "D")) href = "docs.html";
+      if (!e.shiftKey && (e.key === "r" || e.key === "R")) href = "resources.html";
+      if (href) {
+        var tabs = Array.prototype.slice.call(document.querySelectorAll("nav.tabs a.tab"));
+        for (var i = 0; i < tabs.length; i++) {
+          if (tabs[i].getAttribute("href") === href) {
+            e.preventDefault();
+            tabs[i].click();
+            return;
+          }
+        }
+        return;
+      }
+
+      // View shortcuts — on non-index pages, patch stored view and navigate to Actions
+      if (!e.shiftKey && (e.key === "l" || e.key === "L")) {
+        if (!isIndexPage) { e.preventDefault(); navigateToView("list"); }
+        return;
+      }
+      if (!e.shiftKey && (e.key === "b" || e.key === "B")) {
+        if (!isIndexPage) { e.preventDefault(); navigateToView("board"); }
+        return;
+      }
+    });
+  }
+
   function init() {
     var brandName = document.getElementById("brandName");
     if (brandName) {
@@ -402,6 +498,7 @@
 
     initTabIndicator();
     initPageTransitions();
+    initTabShortcuts();
     initResetUndo();
     initAppMenu();
   }

@@ -22,13 +22,17 @@ Think of it like a personal Notion or Trello — but it lives on your computer, 
 LBM is a folder. Copy it anywhere, name it, and you're running.
 
 1. Copy the `1_LBM_Local_Business_Manager` folder into your project (or Desktop, or anywhere)
-2. Open `data/project-data.js` and update the `name` and `fullName` fields
-3. Open `index.html` in your browser
+2. Open `index.html` in your browser
+3. **Click the project name in the header** to rename it inline — no file editing needed
 4. Click **ⓘ** in the header → **Reset to Seed**
 
-Done. Your tracker is now configured for your project. The reset clears any leftover browser data from a previous project and loads cleanly from your seed file. An undo banner appears immediately so you can reverse it if needed.
+Done. The reset clears any leftover browser data from a previous project and loads cleanly. An undo banner appears immediately so you can reverse it if needed.
 
 > No account. No API key. No cloud service. The folder works on every machine, in every browser, offline.
+
+**The OS folder name does not affect the app.** Rename the folder to anything — `tracker/`, `lbm/`, `_tasks/` — it makes no difference.
+
+**Multiple copies in the same browser?** Click **ⓘ** in the header → **Storage key** → **Change** — give each copy a unique key. The app handles data migration and remembers your choice. See the [Developer Guide](docs.html?doc=docs/DEVELOPER_GUIDE.md) for details.
 
 ---
 
@@ -84,6 +88,8 @@ python3 -m http.server 8080
 
 No npm. No build step. No dependencies. Just open the file.
 
+**Embedding LBM inside a larger project?** If your project uses a build tool (Vite, webpack, Next.js, etc.), keep LBM outside your `src/` folder so the build tool does not process it. For Next.js, drop it in `/public`. Full guidance: [Developer Guide](docs.html?doc=docs/DEVELOPER_GUIDE.md).
+
 ---
 
 ## What You'll See
@@ -114,7 +120,7 @@ project: {
 
 Save the file, refresh your browser. Done.
 
-**Full customisation walkthrough:** [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md)
+**Full customisation walkthrough:** [Setup Guide](docs.html?doc=docs/SETUP_GUIDE.md)
 
 ---
 
@@ -159,13 +165,14 @@ All guides are available inside the app under the **Docs** tab, and as plain fil
 
 | Guide | What it covers |
 |---|---|
-| [About](docs/ABOUT.md) | What LBM is, who it's for, and the vision behind it |
-| [Setup Guide](docs/SETUP_GUIDE.md) | Step-by-step setup and customisation — developer and non-developer paths |
-| [Vision and Philosophy](docs/VISION_AND_PHILOSOPHY.md) | The three-tier product roadmap and "everything in a box" philosophy |
-| [Persistence and State](docs/PERSISTENCE_AND_STATE.md) | Where your data lives and how local storage works |
-| [Keyboard Shortcuts](docs/KEYBOARD_SHORTCUTS.md) | All power-user shortcuts |
-| [Local Project System](docs/LOCAL_PROJECT_SYSTEM.md) | How the tracker, docs, and seed data work together |
-| [AI Development Guide](docs/AI_DEVELOPMENT_GUIDE.md) | Working with Claude Code to extend the app |
+| [About](docs.html?doc=docs/ABOUT.md) | What LBM is, who it's for, and the vision behind it |
+| [Setup Guide](docs.html?doc=docs/SETUP_GUIDE.md) | Step-by-step setup and customisation — developer and non-developer paths |
+| [Vision and Philosophy](docs.html?doc=docs/VISION_AND_PHILOSOPHY.md) | The three-tier product roadmap and "everything in a box" philosophy |
+| [Persistence and State](docs.html?doc=docs/PERSISTENCE_AND_STATE.md) | Where your data lives and how local storage works |
+| [Keyboard Shortcuts](docs.html?doc=docs/KEYBOARD_SHORTCUTS.md) | All power-user shortcuts |
+| [Local Project System](docs.html?doc=docs/LOCAL_PROJECT_SYSTEM.md) | How the tracker, docs, and seed data work together |
+| [Developer Guide](docs.html?doc=docs/DEVELOPER_GUIDE.md) | Portability, embedding in projects, build exclusion, storage key, and the documentation rule |
+| [AI Development Guide](docs.html?doc=docs/AI_DEVELOPMENT_GUIDE.md) | Working with Claude Code to extend the app |
 
 ---
 
@@ -198,14 +205,16 @@ All guides are available inside the app under the **Docs** tab, and as plain fil
 ```
 
 **Key rules:**
-- **Vanilla JS + HTML/CSS only** — no build step, no npm
+- **Vanilla JS + HTML/CSS only** — no build step, no npm, no compilation
 - **Local-first** — all task state lives in `localStorage`; `data/project-data.js` is the git-tracked baseline
 - **`docs-content.js` is a cache** — always update it when you change a `.md` doc file
-- **Property labels sync everywhere** — `propLabels` in `localStorage` is the single source of truth; rename in the detail panel and it propagates to sort, settings, and all views automatically. Add new properties via `DEFAULT_PROP_LABELS` in `task-app.js`
+- **Property labels sync everywhere** — `propLabels` in `localStorage` is the single source of truth; rename in the detail panel and it propagates to sort, settings, and all views automatically
+- **Documentation rule** — always check if a doc file already exists before creating a new one; update existing files rather than creating duplicates
 
-**Adding features:** [SKILL.md](SKILL.md)  
-**Design and CSS:** [DESIGN_SKILL.md](DESIGN_SKILL.md)  
-**Working with Claude Code:** [docs/AI_DEVELOPMENT_GUIDE.md](docs/AI_DEVELOPMENT_GUIDE.md)
+**Full developer reference:** [Developer Guide](docs.html?doc=docs/DEVELOPER_GUIDE.md)  
+**Adding features:** [SKILL.md](docs.html?doc=SKILL.md)  
+**Design and CSS:** [DESIGN_SKILL.md](docs.html?doc=DESIGN_SKILL.md)  
+**Working with Claude Code:** [AI Development Guide](docs.html?doc=docs/AI_DEVELOPMENT_GUIDE.md)
 
 ---
 
@@ -219,4 +228,4 @@ LBM is the free, open-source foundation of a three-part product vision:
 | 2 | **OBM** — Online Business Manager | Freemium SaaS *(planned)* |
 | 3 | **Business in a Box** | Premium agency rollout *(planned)* |
 
-Read the full story: [docs/VISION_AND_PHILOSOPHY.md](docs/VISION_AND_PHILOSOPHY.md)
+Read the full story: [Vision and Philosophy](docs.html?doc=docs/VISION_AND_PHILOSOPHY.md)

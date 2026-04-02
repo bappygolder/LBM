@@ -500,6 +500,11 @@ window.MCCProjectData = {
       path: "docs/SETUP_GUIDE.md"
     },
     {
+      title: "Developer Guide",
+      summary: "Portability, embedding in larger projects, build system exclusion, storage key, .gitignore, and the documentation rule.",
+      path: "docs/DEVELOPER_GUIDE.md"
+    },
+    {
       title: "AI Development Guide",
       summary: "Working with Claude Code: token conservation, model recommendations, the 5-location shortcut rule, and feedback loops.",
       path: "docs/AI_DEVELOPMENT_GUIDE.md"
@@ -538,6 +543,21 @@ window.MCCProjectData = {
       title: "Voice Commands",
       summary: "How to use the microphone button in the task creation form. Browser support, urgency/area keyword tables, and tips.",
       path: "docs/VOICE_COMMANDS.md"
+    },
+    {
+      title: "About Skills",
+      summary: "What skills are, how they differ from docs, and a guide to every skill in this project. For anyone working with Claude Code.",
+      path: "docs/ABOUT_SKILLS.md"
+    },
+    {
+      title: "Link Management",
+      summary: "How internal doc links must be written. The docs.html?doc= format, URL routing, and the rule for Claude and AI developers.",
+      path: "docs/LINK_MANAGEMENT.md"
+    },
+    {
+      title: "Product Roadmap",
+      summary: "Free vs paid strategy, GitHub repo structure, backend plan, tech stack, monetization tiers, the privatization plan, and open decisions log.",
+      path: "docs/INTERNAL_ROADMAP.md"
     }
   ],
   skills: [
@@ -565,6 +585,23 @@ window.MCCProjectData = {
       title: "Claude Integration Guide",
       summary: "How to use LBM alongside other development projects. Two-tab workflow, cross-project task logging via the console API, and rules for Claude when operating in a non-LBM session.",
       path: "CLAUDE_INTEGRATION_GUIDE.md"
+    }
+  ],
+  roadmaps: [
+    {
+      title: "About This Roadmap",
+      summary: "Why the roadmap is public, our build-in-the-open philosophy, and how to collaborate.",
+      path: "docs/ROADMAP_ABOUT.md"
+    },
+    {
+      title: "Product Roadmap",
+      summary: "The three-tier product vision (Free / Pro / Business in a Box), technology principles, planned features, and open decisions.",
+      path: "docs/ROADMAP_PRODUCT.md"
+    },
+    {
+      title: "Shortcut Management System",
+      summary: "Full feature specification: conflict-aware keyboard shortcut customisation across every action in LBM.",
+      path: "docs/ROADMAP_SHORTCUTS.md"
     }
   ]
 };
