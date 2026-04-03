@@ -32,6 +32,10 @@ Works on every page.
 | Switch to List view | `L` |
 | Switch to Board view | `B` |
 
+> **Already here?** If you press `A`, `D`, `R`, `L`, or `B` while already on that page or view, a brief nudge appears confirming your location — no navigation happens.
+
+> **Menu keyboard nav:** When the menu is opened with `M`, the first item is focused automatically. Use `↑` / `↓` to move between items, `Home` / `End` to jump to first or last, and `Esc` to close.
+
 ---
 
 ## Global
@@ -44,6 +48,20 @@ Works on every page.
 | Toggle shortcuts panel | `?` |
 | Close any modal, panel, or form | `Esc` |
 | Undo (delete · lane change · title edit) | `Cmd+Z` / `Ctrl+Z` |
+
+---
+
+## Docs Page
+
+| Action | Key |
+|---|---|
+| Navigate to previous doc | `←` |
+| Navigate to next doc | `→` |
+| Focus search | `S` |
+| Hide / show sidebar | Sidebar toolbar buttons |
+
+> Arrow keys navigate across all sections (Documentation → Skills → Roadmap) in order.
+> Navigation respects active search filters — only visible items are traversed.
 
 ---
 

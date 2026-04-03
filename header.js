@@ -182,6 +182,29 @@
 
     if (!btn || !dropdown) return;
 
+    // Arrow-key navigation inside the open menu (Up/Down/Home/End)
+    dropdown.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Home" && e.key !== "End") return;
+      e.preventDefault();
+      var items = Array.prototype.slice.call(
+        dropdown.querySelectorAll(".app-menu-item, .app-toggle-switch[tabindex]")
+      ).filter(function (item) {
+        return !item.closest("[hidden]") && item.offsetParent !== null;
+      });
+      if (!items.length) return;
+      var idx = items.indexOf(document.activeElement);
+      if (e.key === "ArrowDown") {
+        idx = idx < items.length - 1 ? idx + 1 : 0;
+      } else if (e.key === "ArrowUp") {
+        idx = idx > 0 ? idx - 1 : items.length - 1;
+      } else if (e.key === "Home") {
+        idx = 0;
+      } else if (e.key === "End") {
+        idx = items.length - 1;
+      }
+      items[idx].focus();
+    });
+
     var wrap = document.getElementById("appMenuWrap");
 
     function openMenu() {
@@ -402,6 +425,27 @@
   function initTabShortcuts() {
     var isIndexPage = !!document.getElementById("taskList");
 
+    // Brief nudge shown when the user presses a nav key for the page/view they're already on.
+    function showAlreadyHereNudge(label) {
+      var nudge = document.getElementById("lbmAlreadyHereNudge");
+      if (!nudge) {
+        nudge = document.createElement("div");
+        nudge.id = "lbmAlreadyHereNudge";
+        nudge.className = "lbm-already-here-nudge";
+        document.body.appendChild(nudge);
+      }
+      nudge.textContent = label;
+      nudge.classList.remove("is-visible");
+      clearTimeout(nudge._timer);
+      void nudge.offsetWidth; // force reflow so re-animation fires
+      nudge.classList.add("is-visible");
+      nudge._timer = setTimeout(function () {
+        nudge.classList.remove("is-visible");
+      }, 1600);
+    }
+    // Expose for task-app.js (L/B view nudge)
+    window._lbmAlreadyHereNudge = showAlreadyHereNudge;
+
     // Patch localStorage state.ui.view and navigate to Actions page
     function navigateToView(view) {
       try {
@@ -425,24 +469,40 @@
       if (tag === "INPUT" || tag === "TEXTAREA" || (document.activeElement && document.activeElement.isContentEditable)) return;
       if (e.ctrlKey || e.metaKey) return;
 
-      // Menu shortcut — M toggles the app menu
+      // Menu shortcut — M toggles the app menu; focus first item when opened via keyboard
       if (!e.shiftKey && (e.key === "m" || e.key === "M")) {
         var menuBtn = document.getElementById("appMenuBtn");
-        if (menuBtn) { e.preventDefault(); menuBtn.click(); }
+        var menuDd = document.getElementById("appMenuDropdown");
+        if (menuBtn) {
+          e.preventDefault();
+          var wasHidden = !menuDd || menuDd.hidden;
+          menuBtn.click();
+          if (wasHidden && menuDd && !menuDd.hidden) {
+            setTimeout(function () {
+              var firstItem = menuDd.querySelector(".app-menu-item");
+              if (firstItem) firstItem.focus();
+            }, 0);
+          }
+        }
         return;
       }
 
-      // Tab shortcuts
+      // Tab shortcuts — show nudge if already on that page
       var href = null;
-      if (!e.shiftKey && (e.key === "a" || e.key === "A")) href = "index.html";
-      if (!e.shiftKey && (e.key === "d" || e.key === "D")) href = "docs.html";
-      if (!e.shiftKey && (e.key === "r" || e.key === "R")) href = "resources.html";
+      var pageName = null;
+      if (!e.shiftKey && (e.key === "a" || e.key === "A")) { href = "index.html"; pageName = "Actions"; }
+      if (!e.shiftKey && (e.key === "d" || e.key === "D")) { href = "docs.html"; pageName = "Docs"; }
+      if (!e.shiftKey && (e.key === "r" || e.key === "R")) { href = "resources.html"; pageName = "Resources"; }
       if (href) {
         var tabs = Array.prototype.slice.call(document.querySelectorAll("nav.tabs a.tab"));
         for (var i = 0; i < tabs.length; i++) {
           if (tabs[i].getAttribute("href") === href) {
             e.preventDefault();
-            tabs[i].click();
+            if (tabs[i].classList.contains("active")) {
+              showAlreadyHereNudge("You're already on " + pageName);
+            } else {
+              tabs[i].click();
+            }
             return;
           }
         }

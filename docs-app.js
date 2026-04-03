@@ -67,14 +67,22 @@
   renderNav(skillsNav, skillItems);
   renderNav(roadmapsNav, roadmapItems);
 
-  // ── Sidebar search ───────────────────────────────────────────────────────────
-
-  var sidebarSearch = document.getElementById("sidebarSearch");
-  var sidebarSearchClear = document.getElementById("sidebarSearchClear");
+  // ── Helpers ──────────────────────────────────────────────────────────────────
 
   function allItems() {
     return docItems.concat(skillItems).concat(roadmapItems);
   }
+
+  // ── Sidebar search ───────────────────────────────────────────────────────────
+
+  var sidebarSearch       = document.getElementById("sidebarSearch");
+  var sidebarSearchClear  = document.getElementById("sidebarSearchClear");
+  var sidebarSearchArea   = document.getElementById("sidebarSearchArea");
+  var sidebarSearchToggle = document.getElementById("sidebarSearchToggle");
+  var sidebarHideBtn      = document.getElementById("sidebarHideBtn");
+  var sidebarRevealBtn    = document.getElementById("sidebarRevealBtn");
+  var docsPage            = document.querySelector(".docs-page");
+  var SIDEBAR_COLLAPSED_KEY = "lbm.sidebar.docs.collapsed";
 
   function applySearch(query) {
     var q = query.trim().toLowerCase();
@@ -84,23 +92,39 @@
         (item.summary && item.summary.toLowerCase().indexOf(q) !== -1);
       item._button.style.display = match ? "" : "none";
     });
-    // Hide section labels when all items in that section are hidden
     document.querySelectorAll(".sidebar-section").forEach(function (section) {
       var btns = section.querySelectorAll(".nav-item");
       var anyVisible = Array.prototype.some.call(btns, function (b) { return b.style.display !== "none"; });
       section.style.display = anyVisible ? "" : "none";
     });
-    if (sidebarSearchClear) sidebarSearchClear.hidden = !q;
+    if (sidebarSearchClear) sidebarSearchClear.hidden = !query.trim();
+  }
+
+  function expandSearch() {
+    if (sidebarSearchArea) sidebarSearchArea.classList.add("is-expanded");
+  }
+
+  function collapseSearch() {
+    if (sidebarSearchArea && sidebarSearch && !sidebarSearch.value) {
+      sidebarSearchArea.classList.remove("is-expanded");
+    }
+  }
+
+  if (sidebarSearchToggle) {
+    sidebarSearchToggle.addEventListener("click", function () {
+      expandSearch();
+      if (sidebarSearch) sidebarSearch.focus();
+    });
   }
 
   if (sidebarSearch) {
-    sidebarSearch.addEventListener("input", function () {
-      applySearch(sidebarSearch.value);
-    });
+    sidebarSearch.addEventListener("input", function () { applySearch(sidebarSearch.value); });
+    sidebarSearch.addEventListener("blur", collapseSearch);
     sidebarSearch.addEventListener("keydown", function (e) {
       if (e.key === "Escape") {
         sidebarSearch.value = "";
         applySearch("");
+        collapseSearch();
         sidebarSearch.blur();
       }
     });
@@ -114,12 +138,32 @@
     });
   }
 
-  // ── Arrow key navigation (left = prev, right = next across all docs) ─────────
+  // ── Sidebar hide / show ───────────────────────────────────────────────────────
+
+  function setSidebarCollapsed(collapsed) {
+    if (!docsPage) return;
+    docsPage.classList.toggle("sidebar-collapsed", collapsed);
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? "1" : "0");
+  }
+
+  if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1") setSidebarCollapsed(true);
+  if (sidebarHideBtn) sidebarHideBtn.addEventListener("click", function () { setSidebarCollapsed(true); });
+  if (sidebarRevealBtn) sidebarRevealBtn.addEventListener("click", function () { setSidebarCollapsed(false); });
+
+  // ── Keyboard shortcuts: S = focus search  |  ← → = prev/next doc ─────────────
 
   document.addEventListener("keydown", function (e) {
-    // Don't fire when typing in any input/textarea
-    var tag = document.activeElement && document.activeElement.tagName;
-    if (tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable) return;
+    var tag = document.activeElement ? document.activeElement.tagName : "";
+    if (tag === "INPUT" || tag === "TEXTAREA" || (document.activeElement && document.activeElement.isContentEditable)) return;
+    if (e.ctrlKey || e.metaKey) return;
+
+    if (e.key === "s" || e.key === "S") {
+      e.preventDefault();
+      setSidebarCollapsed(false);
+      expandSearch();
+      if (sidebarSearch) sidebarSearch.focus();
+      return;
+    }
 
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
 
@@ -128,33 +172,14 @@
 
     var idx = all.indexOf(currentItem);
     var target = null;
-
-    if (e.key === "ArrowLeft" && idx > 0) {
-      target = all[idx - 1];
-    } else if (e.key === "ArrowRight" && idx < all.length - 1) {
-      target = all[idx + 1];
-    }
+    if (e.key === "ArrowLeft" && idx > 0) target = all[idx - 1];
+    else if (e.key === "ArrowRight" && idx < all.length - 1) target = all[idx + 1];
 
     if (target) {
       e.preventDefault();
       openItem(target);
-      // Scroll the active nav item into view in the sidebar
-      if (target._button) target._button.scrollIntoView({ block: "nearest" });
     }
   });
-
-  // ── URL routing: support ?doc=path to deep-link directly to a doc ────────────
-  (function openInitialDoc() {
-    var params = new URLSearchParams(window.location.search);
-    var docParam = params.get("doc");
-    var allItems = docItems.concat(skillItems).concat(roadmapItems);
-    var target = null;
-    if (docParam) {
-      target = allItems.find(function (item) { return item.path === docParam; }) || null;
-    }
-    if (!target && docItems.length) target = docItems[0];
-    if (target) openItem(target);
-  })();
 
   // ── Nav rendering ────────────────────────────────────────────────────────────
 
@@ -185,6 +210,8 @@
         entry._button.classList.toggle("active", entry === item);
       }
     });
+    // Scroll active nav item into view (no-op if already visible)
+    if (item._button) item._button.scrollIntoView({ block: "nearest" });
 
     viewerType.textContent = item.group;
     viewerTitle.textContent = item.title;
@@ -210,6 +237,17 @@
 
     renderPagination(item);
   }
+
+  // ── URL routing: open initial doc (runs after var currentItem = null above) ───
+  (function () {
+    var params = new URLSearchParams(window.location.search);
+    var docParam = params.get("doc");
+    var items = allItems();
+    var target = null;
+    if (docParam) target = items.find(function (item) { return item.path === docParam; }) || null;
+    if (!target && docItems.length) target = docItems[0];
+    if (target) openItem(target);
+  })();
 
   // ── Prev / Next pagination ────────────────────────────────────────────────────
 

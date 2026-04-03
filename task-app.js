@@ -826,9 +826,21 @@
           confirmDelete(() => deleteTask(tid));
         }
       }
-      // View switching
-      if (e.key === "l" || e.key === "L") { e.preventDefault(); setView("list"); return; }
-      if (e.key === "b" || e.key === "B") { e.preventDefault(); setView("board"); return; }
+      // View switching — show nudge if already in that view
+      if (e.key === "l" || e.key === "L") {
+        e.preventDefault();
+        if (activeView === "list") {
+          if (window._lbmAlreadyHereNudge) window._lbmAlreadyHereNudge("Already in List view");
+        } else { setView("list"); }
+        return;
+      }
+      if (e.key === "b" || e.key === "B") {
+        e.preventDefault();
+        if (activeView === "board") {
+          if (window._lbmAlreadyHereNudge) window._lbmAlreadyHereNudge("Already in Board view");
+        } else { setView("board"); }
+        return;
+      }
     });
   }
 

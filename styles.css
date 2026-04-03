@@ -2368,35 +2368,54 @@ button.danger:hover { background: #f87171; }
 .docs-sidebar::-webkit-scrollbar-track { background: transparent; }
 .docs-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 4px; }
 
-/* ─── Sidebar search ─────────────────────────────────────────────────────────── */
+/* ─── Sidebar toolbar (search + hide) ───────────────────────────────────────── */
 
-.sidebar-search-wrap {
+.sidebar-toolbar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 0 8px 10px;
-  padding: 0 8px;
-  height: 28px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  transition: border-color 0.15s, background 0.15s;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 0 6px 8px;
 }
 
-.sidebar-search-wrap:focus-within {
-  border-color: var(--border-strong);
-  background: rgba(255,255,255,0.06);
-}
-
-.sidebar-search-icon {
+.sidebar-tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
   color: var(--muted-soft);
-  pointer-events: none;
+  cursor: pointer;
+  transition: color 0.13s, background 0.13s;
 }
+.sidebar-tool-btn:hover { color: var(--text); background: rgba(255,255,255,0.07); }
+
+.sidebar-search-area {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: border-color 0.15s, background 0.15s, flex 0.2s ease;
+}
+
+.sidebar-search-area.is-expanded {
+  flex: 1;
+  border-color: var(--border-strong);
+  background: rgba(255,255,255,0.05);
+}
+
+.sidebar-search-area .sidebar-tool-btn { border-radius: 0; }
 
 .sidebar-search-input {
   flex: 1;
   min-width: 0;
+  max-width: 0;
+  opacity: 0;
   background: transparent;
   border: none;
   outline: none;
@@ -2404,6 +2423,15 @@ button.danger:hover { background: #f87171; }
   font-size: 0.78rem;
   color: var(--text);
   padding: 0;
+  transition: opacity 0.15s, max-width 0.2s ease;
+  pointer-events: none;
+}
+
+.sidebar-search-area.is-expanded .sidebar-search-input {
+  max-width: 200px;
+  opacity: 1;
+  padding: 0 4px;
+  pointer-events: auto;
 }
 
 .sidebar-search-input::placeholder { color: var(--muted-soft); }
@@ -2413,8 +2441,8 @@ button.danger:hover { background: #f87171; }
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 14px;
-  height: 14px;
+  width: 20px;
+  height: 20px;
   background: transparent;
   border: none;
   padding: 0;
@@ -2424,6 +2452,31 @@ button.danger:hover { background: #f87171; }
   transition: color 0.13s;
 }
 .sidebar-search-clear:hover { color: var(--text); }
+
+/* Sidebar collapsed state */
+
+.sidebar-reveal-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 30px;
+  height: 30px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted-soft);
+  cursor: pointer;
+  z-index: 2;
+  transition: color 0.13s, background 0.13s, border-color 0.13s;
+}
+.sidebar-reveal-btn:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.09);
+  border-color: var(--border-strong);
+}
 
 .docs-resize-handle {
   width: 5px;
@@ -2552,6 +2605,19 @@ button.danger:hover { background: #f87171; }
   overflow-y: auto;
   padding: 52px 80px 80px;
   min-width: 0;
+  position: relative;
+}
+
+/* ── Sidebar collapsed (desktop only) ──────────────────────────────────────── */
+@media (min-width: 769px) {
+  .docs-page.sidebar-collapsed .docs-sidebar {
+    width: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+  }
+  .docs-page.sidebar-collapsed .docs-resize-handle { display: none; }
+  .docs-page.sidebar-collapsed .sidebar-reveal-btn { display: flex; }
 }
 
 .docs-viewer::-webkit-scrollbar { width: 5px; }
@@ -2775,6 +2841,34 @@ button.danger:hover { background: #f87171; }
   justify-content: center;
   gap: 8px;
   padding-top: 12px;
+}
+
+/* ─── Already-here nudge ────────────────────────────────────────────────────── */
+/* Shown when a user presses a nav key (A/D/R/L/B) while already on that page/view */
+
+.lbm-already-here-nudge {
+  position: fixed;
+  top: 58px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px);
+  background: var(--surface-solid);
+  color: var(--muted);
+  font-size: 0.7375rem;
+  font-family: inherit;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.lbm-already-here-nudge.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 /* ─── Undo toast ────────────────────────────────────────────────────────────── */
