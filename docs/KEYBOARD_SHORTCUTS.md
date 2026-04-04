@@ -78,6 +78,8 @@ Works on every page.
 | Open focused task | `Enter` |
 | Delete focused task (Cmd+Z to undo) | `Delete` · `⌫` · `Shift+D` |
 | Jump to last deleted position | `←` / `→` |
+| Increase list text size | `+` |
+| Decrease list text size | `-` |
 | Clear row focus | `Esc` |
 
 ---

@@ -88,29 +88,32 @@
               </svg>
               Export Markdown
             </button>
+            <button class="app-menu-item" id="menuImportJson" role="menuitem">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Import JSON
+            </button>
+            <button class="app-menu-item" id="menuRestorePoints" role="menuitem">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              Restore points
+            </button>
+            <button class="app-menu-item" id="menuStorageAudit" role="menuitem">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                <path d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12"/>
+                <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+              </svg>
+              Storage audit
+              <span class="storage-audit-badge" id="storageAuditBadge" hidden aria-label="orphaned data found"></span>
+            </button>
             <div class="app-menu-sep" role="separator"></div>
-            <div class="app-menu-row">
-              <button class="app-menu-item" id="menuResetSeed" role="menuitem">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <polyline points="1 4 1 10 7 10"/>
-                  <path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
-                </svg>
-                Reset to seed data
-              </button>
-              <button class="app-menu-info-btn" id="menuSeedInfoBtn" type="button"
-                aria-label="About seed data" aria-expanded="false">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/>
-                  <line x1="12" y1="8" x2="12.01" y2="8"/>
-                </svg>
-              </button>
-            </div>
-            <div class="app-menu-seed-info" id="seedInfoPanel" hidden>
-              Loads example tasks so you can explore the app in action.
-              Click <strong>Reset to seed data</strong> above to restore the demo content.
-            </div>
             <button class="app-menu-item app-menu-item--danger" id="menuResetApp" role="menuitem">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -118,7 +121,7 @@
                 <path d="M10 11v6"/><path d="M14 11v6"/>
                 <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
               </svg>
-              Reset app
+              Reset this copy
             </button>
             <div class="app-menu-sep" role="separator"></div>
             <button class="app-menu-item app-menu-advanced-header" id="menuAdvancedToggle"
@@ -162,7 +165,7 @@
       <div class="button-row">
         <button class="secondary" id="exportJsonButton" type="button">Export JSON</button>
         <button class="secondary" id="exportMarkdownButton" type="button">Export Markdown</button>
-        <button class="ghost" id="resetButton" type="button">Reset to Seed</button>
+        <button class="ghost" id="resetButton" type="button">Reset</button>
       </div>
       <div class="notice" id="seedNotice" hidden></div>
       <div class="storage-key-row">
@@ -625,6 +628,7 @@
         <div class="shortcuts-row"><kbd>Shift</kbd><kbd>D</kbd><span>Delete focused task (Cmd+Z to undo)</span></div>
         <div class="shortcuts-row"><kbd>←</kbd><span>Restore deleted position</span></div>
         <div class="shortcuts-row"><kbd>→</kbd><span>Restore deleted position</span></div>
+        <div class="shortcuts-row"><kbd>+</kbd> / <kbd>-</kbd><span>Increase / decrease list text size</span></div>
       </div>
 
       <div class="shortcuts-group">
@@ -658,6 +662,45 @@
     </div>
   </div>
 
+  <!-- ── Restore points modal ─────────────────────────────────────────────────── -->
+  <div class="modal-backdrop" id="restoreModal" hidden
+    role="dialog" aria-modal="true" aria-labelledby="restoreModalTitle" tabindex="-1">
+    <div class="modal-card modal-card--restore">
+      <div class="modal-header">
+        <h2 class="modal-title" id="restoreModalTitle">Restore points</h2>
+        <button class="icon-button" type="button" id="restoreModalClose" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <p class="rp-subtitle">Up to 25 snapshots of your task data, saved automatically as you work.</p>
+      <div class="rp-list" id="restoreList"></div>
+    </div>
+  </div>
+
+  <!-- ── Storage audit modal ──────────────────────────────────────────────────── -->
+  <div class="modal-backdrop" id="storageAuditModal" hidden
+    role="dialog" aria-modal="true" aria-labelledby="storageAuditTitle" tabindex="-1">
+    <div class="modal-card modal-card--audit">
+      <div class="modal-header">
+        <h2 class="modal-title" id="storageAuditTitle">Storage audit</h2>
+        <button class="icon-button" type="button" id="storageAuditClose" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <p class="audit-auto-cleaned" id="auditAutoCleaned" hidden></p>
+      <div class="audit-body" id="auditBody"></div>
+      <div class="audit-footer">
+        <button class="primary" id="storageAuditDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Reset app confirmation modal ────────────────────────────────────────── -->
   <div class="reset-app-overlay" id="resetAppOverlay" hidden role="dialog"
     aria-modal="true" aria-labelledby="resetAppTitle">
@@ -670,15 +713,135 @@
         </svg>
       </div>
       <div class="reset-app-header">
-        <h2 class="reset-app-title" id="resetAppTitle">Reset app?</h2>
-        <p class="reset-app-sub">This clears all tasks, settings, and local data. Type <strong>reset</strong> to confirm.</p>
+        <h2 class="reset-app-title" id="resetAppTitle">Reset this copy?</h2>
+        <p class="reset-app-sub">Choose what to reset. Other installations are not affected.</p>
       </div>
-      <input type="text" class="reset-confirm-input" id="resetConfirmInput"
-        placeholder='Type "reset" to confirm' autocomplete="off" spellcheck="false">
+      <div class="reset-dialog-toggles">
+        <label class="app-menu-toggle-row reset-toggle-row">
+          <span class="app-menu-toggle-label">Clear all entries</span>
+          <span class="app-toggle-switch" id="resetToggleTasks" role="switch"
+            aria-checked="true" tabindex="0" aria-label="Clear all entries">
+            <span class="app-toggle-thumb"></span>
+          </span>
+        </label>
+        <label class="app-menu-toggle-row reset-toggle-row">
+          <span class="app-menu-toggle-label">Reset workspace name</span>
+          <span class="app-toggle-switch" id="resetToggleName" role="switch"
+            aria-checked="false" tabindex="0" aria-label="Reset workspace name">
+            <span class="app-toggle-thumb"></span>
+          </span>
+        </label>
+        <label class="app-menu-toggle-row reset-toggle-row">
+          <span class="app-menu-toggle-label">Reset settings</span>
+          <span class="app-toggle-switch" id="resetToggleSettings" role="switch"
+            aria-checked="false" tabindex="0" aria-label="Reset settings">
+            <span class="app-toggle-thumb"></span>
+          </span>
+        </label>
+      </div>
+      <p class="reset-scope-note">This only affects this copy. Other installations are untouched.</p>
       <div class="reset-app-actions">
         <button class="ghost" id="resetAppCancelBtn" type="button">Cancel</button>
-        <button class="danger" id="resetAppConfirmBtn" type="button" disabled>Reset Everything</button>
+        <button class="danger" id="resetAppConfirmBtn" type="button">Reset</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ── New-copy setup modal ─────────────────────────────────────────────────
+       Case A: Shown when LBM is opened at a new folder path while data from
+               another installation exists in this browser.
+       Case B: Shown when an install token mismatch is detected — i.e. a fresh
+               copy of LBM was placed at the same path as an existing install.
+       Locks the background until the user makes a choice.
+  ──────────────────────────────────────────────────────────────────────────── -->
+  <div class="new-copy-overlay" id="newCopyOverlay" hidden role="dialog"
+    aria-modal="true" aria-labelledby="newCopyTitle">
+    <div class="new-copy-dialog">
+      <div class="new-copy-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+      </div>
+      <div class="new-copy-header">
+        <h2 class="new-copy-title" id="newCopyTitle">New copy of LBM detected</h2>
+        <p class="new-copy-sub" id="newCopySubtitle">Give this copy a project name so its tasks stay separate from other installations in this browser.</p>
+      </div>
+
+      <!-- ── Case B: data recovery (shown when fresh install detected) ──── -->
+      <div id="newCopyRecoverySection" hidden>
+
+        <!-- Main actions -->
+        <div class="new-copy-recovery-actions" id="newCopyRecoveryActions">
+          <button class="ghost" id="newCopyKeepBtn" type="button">Keep my data</button>
+          <button class="primary" id="newCopyWipeBtn" type="button">Start fresh</button>
+          <label class="new-copy-import-label" for="newCopyImportInput">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span class="new-copy-import-text">Import data</span>
+            <span class="new-copy-import-info" aria-hidden="true">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span class="new-copy-import-tooltip">Restore your tasks from a JSON file exported from a previous LBM install</span>
+            </span>
+          </label>
+          <input type="file" id="newCopyImportInput" accept=".json">
+        </div>
+
+        <!-- Inline confirm: shown when Start fresh is clicked -->
+        <div class="new-copy-wipe-confirm" id="newCopyWipeConfirm" hidden>
+          <p class="new-copy-wipe-warning">All saved data will be permanently deleted. This cannot be undone.</p>
+          <div class="new-copy-wipe-actions">
+            <button class="ghost" id="newCopyWipeCancelBtn" type="button">Cancel</button>
+            <button class="danger" id="newCopyWipeConfirmBtn" type="button">Yes, clear everything</button>
+          </div>
+        </div>
+
+        <button class="new-copy-details-toggle" id="newCopyDetailsToggle" type="button" aria-expanded="false">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Previous session data
+        </button>
+        <p class="new-copy-recovery-meta" id="newCopyRecoveryMeta" hidden></p>
+
+      </div>
+
+      <!-- ── Case A: new path setup (shown by default) ──────────────────── -->
+      <div id="newCopySetupSection">
+        <label class="new-copy-field-label" for="newCopyNameInput">Project name</label>
+        <input id="newCopyNameInput" class="new-copy-name-input" type="text"
+          placeholder="e.g. My Shop 2026" autocomplete="off" spellcheck="false">
+        <button class="primary new-copy-start-btn" id="newCopyStartBtn" type="button">Start Fresh</button>
+        <button class="new-copy-advanced-toggle" id="newCopyAdvancedToggle"
+          type="button" aria-expanded="false" aria-controls="newCopyAdvancedPanel">
+          <svg class="advanced-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+          Advanced
+        </button>
+        <div class="new-copy-advanced-panel" id="newCopyAdvancedPanel" hidden>
+          <label class="new-copy-field-label" for="newCopyKeyInput">Storage key</label>
+          <input id="newCopyKeyInput" class="new-copy-key-input" type="text"
+            spellcheck="false" autocomplete="off">
+          <p class="new-copy-key-hint">Auto-generated from your project name. Letters, numbers, hyphens only. Must be unique per browser.</p>
+        </div>
+        <button class="new-copy-skip-btn" id="newCopySkipBtn" type="button">Use existing data</button>
+      </div>
+
     </div>
   </div>
 

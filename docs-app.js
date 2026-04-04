@@ -24,6 +24,11 @@
   const downloadDocBtn = document.getElementById("downloadDocBtn");
   const deleteDocBtn = document.getElementById("deleteDocBtn");
   const docPagination = document.getElementById("docPagination");
+  const docToc = document.getElementById("docToc");
+  const tocNav = document.getElementById("tocNav");
+  const tocHideBtn = document.getElementById("tocHideBtn");
+  const tocRevealBtn = document.getElementById("tocRevealBtn");
+  const TOC_HIDDEN_KEY = "lbm.toc.hidden";
 
   const CUSTOM_DOCS_KEY = "lbm.custom.docs";
 
@@ -213,7 +218,12 @@
     // Scroll active nav item into view (no-op if already visible)
     if (item._button) item._button.scrollIntoView({ block: "nearest" });
 
-    viewerType.textContent = item.group;
+    if (item.lastUpdated) {
+      var d = new Date(item.lastUpdated + "T00:00:00");
+      viewerType.textContent = "Last updated " + d.toLocaleDateString("en-AU", { year: "numeric", month: "long", day: "numeric" });
+    } else {
+      viewerType.textContent = "";
+    }
     viewerTitle.textContent = item.title;
     viewerSummary.textContent = item.summary || "";
     openRawLink.href = item.path;
@@ -235,6 +245,11 @@
         '<p><a href="' + escapeAttr(item.path) + '">Open the raw file</a>.</p>';
     }
 
+    // Reset scroll so ToC alignment measurement is always from a known position
+    var docsViewerEl = document.querySelector(".docs-viewer");
+    if (docsViewerEl) docsViewerEl.scrollTop = 0;
+
+    buildToc();
     renderPagination(item);
   }
 
@@ -248,6 +263,122 @@
     if (!target && docItems.length) target = docItems[0];
     if (target) openItem(target);
   })();
+
+  // ── On-this-page ToC ─────────────────────────────────────────────────────────
+
+  function slugifyHeading(text) {
+    return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "section";
+  }
+
+  function buildToc() {
+    if (!tocNav || !docToc) return;
+    var headings = docPreview.querySelectorAll("h2, h3");
+
+    if (headings.length < 2) {
+      docToc.classList.add("doc-toc--empty");
+      tocNav.innerHTML = "";
+      if (tocRevealBtn) tocRevealBtn.style.display = "";
+      return;
+    }
+
+    docToc.classList.remove("doc-toc--empty");
+    // Update reveal button: show if user has the ToC hidden
+    if (tocRevealBtn) {
+      tocRevealBtn.style.display = docToc.classList.contains("doc-toc--hidden") ? "flex" : "";
+    }
+
+    // Assign IDs to headings for anchor linking
+    var usedIds = {};
+    headings.forEach(function (h) {
+      var base = slugifyHeading(h.textContent);
+      var id = base;
+      var count = 1;
+      while (usedIds[id]) { id = base + "-" + (++count); }
+      usedIds[id] = true;
+      h.id = id;
+    });
+
+    // Build nav items
+    var fragment = document.createDocumentFragment();
+    headings.forEach(function (h) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "toc-item toc-item--" + h.tagName.toLowerCase();
+      btn.textContent = h.textContent;
+      btn.addEventListener("click", function () {
+        var docsViewer = document.querySelector(".docs-viewer");
+        if (docsViewer) {
+          var offset = h.getBoundingClientRect().top - docsViewer.getBoundingClientRect().top + docsViewer.scrollTop - 12;
+          docsViewer.scrollTo({ top: offset, behavior: "smooth" });
+        } else {
+          h.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        // Highlight active item
+        tocNav.querySelectorAll(".toc-item").forEach(function (b) { b.classList.remove("is-active"); });
+        btn.classList.add("is-active");
+      });
+      fragment.appendChild(btn);
+    });
+
+    tocNav.innerHTML = "";
+    tocNav.appendChild(fragment);
+
+    // Align ToC with the separator line (border-bottom of viewer-header)
+    // Uses viewerHeader.bottom - docsViewer.top so scroll position never interferes
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        var docsViewer = document.querySelector(".docs-viewer");
+        var viewerHeader = document.querySelector(".viewer-header");
+        if (!docsViewer || !viewerHeader) return;
+        var viewerTop = docsViewer.getBoundingClientRect().top;
+        var headerBottom = viewerHeader.getBoundingClientRect().bottom;
+        var offset = Math.max(16, headerBottom - viewerTop);
+        docToc.style.paddingTop = offset + "px";
+      });
+    });
+
+    // Scroll-spy: highlight the closest heading above scroll position
+    var docsViewer = document.querySelector(".docs-viewer");
+    if (docsViewer) {
+      docsViewer.addEventListener("scroll", onViewerScroll, { passive: true });
+    }
+  }
+
+  function onViewerScroll() {
+    if (!tocNav || !docPreview) return;
+    var docsViewer = document.querySelector(".docs-viewer");
+    if (!docsViewer) return;
+    var scrollTop = docsViewer.scrollTop;
+    var viewerTop = docsViewer.getBoundingClientRect().top;
+    var headings = docPreview.querySelectorAll("h2, h3");
+    var active = null;
+    headings.forEach(function (h) {
+      var top = h.getBoundingClientRect().top - viewerTop + scrollTop;
+      if (top <= scrollTop + 40) active = h.id;
+    });
+    tocNav.querySelectorAll(".toc-item").forEach(function (btn) {
+      var matches = active && btn.textContent === document.getElementById(active).textContent;
+      btn.classList.toggle("is-active", !!matches);
+    });
+  }
+
+  // ToC hide / show
+  function setTocHidden(hidden) {
+    if (!docToc) return;
+    docToc.classList.toggle("doc-toc--hidden", hidden);
+    var hasContent = !docToc.classList.contains("doc-toc--empty");
+    if (tocRevealBtn) tocRevealBtn.style.display = hidden && hasContent ? "flex" : "";
+    localStorage.setItem(TOC_HIDDEN_KEY, hidden ? "1" : "0");
+  }
+
+  if (localStorage.getItem(TOC_HIDDEN_KEY) === "1") setTocHidden(true);
+
+  if (tocHideBtn) {
+    tocHideBtn.addEventListener("click", function () { setTocHidden(true); });
+  }
+  if (tocRevealBtn) {
+    tocRevealBtn.addEventListener("click", function () { setTocHidden(false); });
+  }
 
   // ── Prev / Next pagination ────────────────────────────────────────────────────
 
@@ -492,6 +623,7 @@
     const html = [];
     let paragraph = [];
     let listItems = [];
+    let orderedItems = []; // each: { text: string, subs: string[] }
     let quoteLines = [];
     let inCode = false;
     let codeLines = [];
@@ -509,6 +641,23 @@
         return "<li>" + renderInline(item) + "</li>";
       }).join("") + "</ul>");
       listItems = [];
+    }
+
+    function flushOrderedList() {
+      if (!orderedItems.length) return;
+      var parts = ["<ol>"];
+      orderedItems.forEach(function (item) {
+        if (item.subs.length) {
+          parts.push("<li>" + renderInline(item.text) +
+            "<ul>" + item.subs.map(function (s) { return "<li>" + renderInline(s) + "</li>"; }).join("") + "</ul>" +
+            "</li>");
+        } else {
+          parts.push("<li>" + renderInline(item.text) + "</li>");
+        }
+      });
+      parts.push("</ol>");
+      html.push(parts.join(""));
+      orderedItems = [];
     }
 
     function flushQuote() {
@@ -550,23 +699,23 @@
 
     lines.forEach(function (line) {
       if (line.startsWith("```")) {
-        flushParagraph(); flushList(); flushQuote(); flushTable();
+        flushParagraph(); flushList(); flushOrderedList(); flushQuote(); flushTable();
         if (inCode) { flushCode(); } else { inCode = true; codeLines = []; }
         return;
       }
       if (inCode) { codeLines.push(line); return; }
-      if (!line.trim()) { flushParagraph(); flushList(); flushQuote(); flushTable(); return; }
+      if (!line.trim()) { flushParagraph(); flushList(); flushOrderedList(); flushQuote(); flushTable(); return; }
 
       // Horizontal rule
       if (/^---+$/.test(line.trim())) {
-        flushParagraph(); flushList(); flushQuote(); flushTable();
+        flushParagraph(); flushList(); flushOrderedList(); flushQuote(); flushTable();
         html.push("<hr>");
         return;
       }
 
       // Table row
       if (/^\|/.test(line)) {
-        flushParagraph(); flushList(); flushQuote();
+        flushParagraph(); flushList(); flushOrderedList(); flushQuote();
         if (isTableSeparator(line)) return; // skip separator row
         var cells = line.split("|").slice(1, -1);
         tableRows.push(cells);
@@ -577,17 +726,28 @@
       if (tableRows.length) flushTable();
 
       if (/^#{1,3}\s/.test(line)) {
-        flushParagraph(); flushList(); flushQuote();
+        flushParagraph(); flushList(); flushOrderedList(); flushQuote();
         const level = line.match(/^#+/)[0].length;
         html.push("<h" + level + ">" + renderInline(line.slice(level + 1)) + "</h" + level + ">");
         return;
       }
-      if (/^- /.test(line)) { flushParagraph(); flushQuote(); listItems.push(line.slice(2)); return; }
-      if (/^> /.test(line)) { flushParagraph(); flushList(); quoteLines.push(line.slice(2)); return; }
+      // Ordered list item: "1. text"
+      if (/^\d+\. /.test(line)) {
+        flushParagraph(); flushList(); flushQuote();
+        orderedItems.push({ text: line.replace(/^\d+\. /, ""), subs: [] });
+        return;
+      }
+      // Indented sub-bullet inside an ordered list: "   - text"
+      if (/^\s+- /.test(line) && orderedItems.length) {
+        orderedItems[orderedItems.length - 1].subs.push(line.replace(/^\s+- /, ""));
+        return;
+      }
+      if (/^- /.test(line)) { flushParagraph(); flushOrderedList(); flushQuote(); listItems.push(line.slice(2)); return; }
+      if (/^> /.test(line)) { flushParagraph(); flushList(); flushOrderedList(); quoteLines.push(line.slice(2)); return; }
       paragraph.push(line.trim());
     });
 
-    flushParagraph(); flushList(); flushQuote(); flushCode(); flushTable();
+    flushParagraph(); flushList(); flushOrderedList(); flushQuote(); flushCode(); flushTable();
     return html.join("");
   }
 

@@ -195,7 +195,7 @@
       </button>
       <div class="viewer-header">
         <div>
-          <p class="viewer-eyebrow" id="viewerType">Document</p>
+          <p class="viewer-eyebrow" id="viewerType"></p>
           <h2 class="viewer-title" id="viewerTitle">Loading…</h2>
           <p class="viewer-summary" id="viewerSummary"></p>
         </div>
@@ -240,6 +240,29 @@
       <nav class="doc-pagination" id="docPagination" style="display:none;" aria-label="Article navigation"></nav>
     </main>
 
+    <!-- Fixed reveal button (shown when ToC is hidden and doc has sections) -->
+    <button class="toc-reveal-btn" id="tocRevealBtn" type="button" aria-label="Show page sections" title="Show page sections">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="14" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <!-- On-this-page table of contents -->
+    <aside class="doc-toc" id="docToc" aria-label="Page sections">
+      <div class="doc-toc-inner">
+        <div class="doc-toc-header">
+          <span class="doc-toc-label">On this page</span>
+          <button class="doc-toc-hide-btn" id="tocHideBtn" type="button" title="Hide" aria-label="Hide page sections">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+              <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <nav id="tocNav" aria-label="Page sections"></nav>
+      </div>
+    </aside>
+
   </div>
 
   <span id="docsReviewedOn" hidden></span>
@@ -279,6 +302,92 @@
         <button class="ghost" id="cancelAddDocBtn" type="button">Cancel</button>
         <button class="primary" id="saveDocBtn" type="button">Save Document</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ── Keyboard shortcuts panel ─────────────────────────────────────────────── -->
+  <button class="shortcuts-fab" id="shortcutsFab" type="button"
+    aria-label="Keyboard shortcuts" data-tooltip="Keyboard shortcuts  ?">
+    <span class="shortcuts-fab-glyph" aria-hidden="true">?</span>
+  </button>
+
+  <div class="shortcuts-panel" id="shortcutsPanel" hidden aria-modal="true" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="shortcuts-panel-header">
+      <h2 class="shortcuts-panel-title">Keyboard Shortcuts</h2>
+      <button class="icon-button shortcuts-panel-close" id="shortcutsPanelClose" type="button" aria-label="Close">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="shortcuts-panel-body">
+
+      <div class="shortcuts-group">
+        <div class="shortcuts-group-title shortcuts-group-title--blue">Tab Navigation</div>
+        <div class="shortcuts-row"><kbd>A</kbd><span>Go to Actions</span></div>
+        <div class="shortcuts-row"><kbd>D</kbd><span>Go to Docs</span></div>
+        <div class="shortcuts-row"><kbd>R</kbd><span>Go to Resources</span></div>
+        <div class="shortcuts-row"><kbd>M</kbd><span>Open / close menu</span></div>
+        <div class="shortcuts-row"><kbd>L</kbd><span>Switch to List view</span></div>
+        <div class="shortcuts-row"><kbd>B</kbd><span>Switch to Board view</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcuts-group-title shortcuts-group-title--purple">Quick Access</div>
+        <div class="shortcuts-row"><kbd>N</kbd><span>New item</span></div>
+        <div class="shortcuts-row"><kbd>Ctrl</kbd><kbd>N</kbd><span>New item (works in fields)</span></div>
+        <div class="shortcuts-row"><kbd>/</kbd><span>Search</span></div>
+        <div class="shortcuts-row"><kbd>?</kbd><span>Toggle shortcuts panel</span></div>
+        <div class="shortcuts-row"><kbd>Esc</kbd><span>Dismiss / close anything</span></div>
+        <div class="shortcuts-row"><kbd>Cmd</kbd><kbd>Z</kbd><span>Undo (delete · lane change · title edit)</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcuts-group-title shortcuts-group-title--blue">List — Navigate &amp; Select</div>
+        <div class="shortcuts-row"><kbd>↓</kbd><span>Focus next task</span></div>
+        <div class="shortcuts-row"><kbd>↑</kbd><span>Focus previous task</span></div>
+        <div class="shortcuts-row"><kbd>Enter</kbd><span>Open focused task</span></div>
+        <div class="shortcuts-row"><kbd>Shift</kbd><kbd>↓</kbd><span>Scroll down</span></div>
+        <div class="shortcuts-row"><kbd>Shift</kbd><kbd>↑</kbd><span>Scroll up</span></div>
+        <div class="shortcuts-row"><kbd>Esc</kbd><span>Clear selection</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcuts-group-title shortcuts-group-title--amber">List — Task Actions</div>
+        <div class="shortcuts-row"><kbd>Shift</kbd><kbd>D</kbd><span>Delete focused task (Cmd+Z to undo)</span></div>
+        <div class="shortcuts-row"><kbd>←</kbd><span>Restore deleted position</span></div>
+        <div class="shortcuts-row"><kbd>→</kbd><span>Restore deleted position</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcuts-group-title shortcuts-group-title--purple">Multi-Select (List &amp; Board)</div>
+        <div class="shortcuts-row"><kbd>Drag</kbd><span>Rubber-band select tasks</span></div>
+        <div class="shortcuts-row"><kbd>Click</kbd><span>Toggle item in selection</span></div>
+        <div class="shortcuts-row"><kbd>Del</kbd><kbd>⌫</kbd><kbd>Shift</kbd><kbd>D</kbd><span>Delete all selected</span></div>
+        <div class="shortcuts-row"><kbd>Drag</kbd><span>Drag any selected item — all move together</span></div>
+        <div class="shortcuts-row"><kbd>Esc</kbd><span>Clear selection</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcuts-group-title shortcuts-group-title--green">Detail Panel</div>
+        <div class="shortcuts-row"><kbd>Shift</kbd><kbd>D</kbd><span>Delete this task (Cmd+Z to undo)</span></div>
+        <div class="shortcuts-row"><kbd>Esc</kbd><span>Close panel</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcuts-group-title shortcuts-group-title--pink">Notes Editor</div>
+        <div class="shortcuts-row"><kbd>Cmd</kbd><kbd>B</kbd><span>Bold</span></div>
+        <div class="shortcuts-row"><kbd>Cmd</kbd><kbd>I</kbd><span>Italic</span></div>
+        <div class="shortcuts-row"><kbd>Cmd</kbd><kbd>Shift</kbd><kbd>8</kbd><span>Bullet list</span></div>
+      </div>
+
+      <div class="shortcuts-group">
+        <div class="shortcuts-group-title shortcuts-group-title--yellow">Board View</div>
+        <div class="shortcuts-row"><kbd>Enter</kbd><span>Save new task</span></div>
+        <div class="shortcuts-row"><kbd>Esc</kbd><span>Cancel inline form</span></div>
+      </div>
+
     </div>
   </div>
 

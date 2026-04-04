@@ -4,6 +4,8 @@
 
 You download it once, open a file, and it works. Your data stays on your computer.
 
+> **Ready to get started?** [Setup Guide →](docs.html?doc=docs/SETUP_GUIDE.md) gets you up and running in under two minutes.
+
 ---
 
 ## What It Does

@@ -119,6 +119,83 @@
     });
   }
 
+  // ── Theme color ───────────────────────────────────────────────────────────────
+
+  var THEMES = [
+    { id: "purple", label: "Purple", color: "#8b5cf6", glow: "rgba(139,92,246,0.4)",  hover: "#a78bfa", soft: "rgba(139,92,246,0.12)", tabGlow: "rgba(139,92,246,0.3)", bgGlow: "rgba(139,92,246,0.12)" },
+    { id: "blue",   label: "Blue",   color: "#3b82f6", glow: "rgba(59,130,246,0.4)",  hover: "#60a5fa", soft: "rgba(59,130,246,0.12)", tabGlow: "rgba(59,130,246,0.3)",  bgGlow: "rgba(59,130,246,0.12)" },
+    { id: "teal",   label: "Teal",   color: "#14b8a6", glow: "rgba(20,184,166,0.4)",  hover: "#2dd4bf", soft: "rgba(20,184,166,0.12)", tabGlow: "rgba(20,184,166,0.3)",  bgGlow: "rgba(20,184,166,0.12)" },
+    { id: "green",  label: "Green",  color: "#22c55e", glow: "rgba(34,197,94,0.4)",   hover: "#4ade80", soft: "rgba(34,197,94,0.12)",  tabGlow: "rgba(34,197,94,0.3)",   bgGlow: "rgba(34,197,94,0.12)" },
+    { id: "amber",  label: "Amber",  color: "#f59e0b", glow: "rgba(245,158,11,0.4)",  hover: "#fbbf24", soft: "rgba(245,158,11,0.12)", tabGlow: "rgba(245,158,11,0.3)",  bgGlow: "rgba(245,158,11,0.10)" },
+    { id: "rose",   label: "Rose",   color: "#f43f5e", glow: "rgba(244,63,94,0.4)",   hover: "#fb7185", soft: "rgba(244,63,94,0.12)",  tabGlow: "rgba(244,63,94,0.3)",   bgGlow: "rgba(244,63,94,0.12)" },
+  ];
+
+  function themeStorageKey() {
+    var dir = window.location.pathname.replace(/\/[^\/]*$/, "") || "/";
+    return "lbm-theme:" + dir;
+  }
+
+  function applyTheme(themeId) {
+    var t = null;
+    for (var i = 0; i < THEMES.length; i++) {
+      if (THEMES[i].id === themeId) { t = THEMES[i]; break; }
+    }
+    if (!t) return;
+    var root = document.documentElement;
+    root.style.setProperty("--accent",          t.color);
+    root.style.setProperty("--accent-glow",     t.glow);
+    root.style.setProperty("--accent-hover",    t.hover);
+    root.style.setProperty("--accent-soft",     t.soft);
+    root.style.setProperty("--tab-active",      t.color);
+    root.style.setProperty("--tab-active-glow", t.tabGlow);
+    root.style.setProperty("--bg-glow-primary", t.bgGlow);
+  }
+
+  function initThemePicker(dropdown) {
+    if (!dropdown) return;
+
+    var savedTheme = localStorage.getItem(themeStorageKey()) || "purple";
+
+    // Build the theme section HTML
+    var section = document.createElement("div");
+    section.className = "app-menu-theme-section";
+    section.innerHTML =
+      '<span class="app-menu-theme-label">Theme</span>' +
+      '<div class="app-menu-theme-swatches" role="group" aria-label="Project theme color"></div>';
+
+    var swatchRow = section.querySelector(".app-menu-theme-swatches");
+
+    THEMES.forEach(function (t) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "theme-swatch";
+      btn.setAttribute("data-theme", t.id);
+      btn.setAttribute("aria-label", t.label + " theme");
+      btn.setAttribute("aria-pressed", t.id === savedTheme ? "true" : "false");
+      btn.setAttribute("title", t.label);
+      btn.style.background = t.color;
+      // Checkmark icon
+      btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        localStorage.setItem(themeStorageKey(), t.id);
+        applyTheme(t.id);
+        // Update aria-pressed on all swatches
+        swatchRow.querySelectorAll(".theme-swatch").forEach(function (s) {
+          s.setAttribute("aria-pressed", s.getAttribute("data-theme") === t.id ? "true" : "false");
+        });
+      });
+      swatchRow.appendChild(btn);
+    });
+
+    var sep = document.createElement("div");
+    sep.className = "app-menu-sep";
+    sep.setAttribute("role", "separator");
+
+    dropdown.insertBefore(sep, dropdown.firstChild);
+    dropdown.insertBefore(section, dropdown.firstChild);
+  }
+
   // ── App menu ──────────────────────────────────────────────────────────────────
 
   var RESET_BACKUP_KEY    = "lbm.reset.backup";
@@ -182,17 +259,41 @@
 
     if (!btn || !dropdown) return;
 
-    // Arrow-key navigation inside the open menu (Up/Down/Home/End)
+    initThemePicker(dropdown);
+
+    // Arrow-key navigation inside the open menu (Up/Down/Home/End + Left/Right for swatches)
     dropdown.addEventListener("keydown", function (e) {
-      if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Home" && e.key !== "End") return;
+      var isVertical   = e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Home" || e.key === "End";
+      var isHorizontal = e.key === "ArrowLeft" || e.key === "ArrowRight";
+      if (!isVertical && !isHorizontal) return;
+
+      var onSwatch = document.activeElement && document.activeElement.classList.contains("theme-swatch");
+
+      // Left / Right — only meaningful when focus is on a swatch
+      if (isHorizontal) {
+        if (!onSwatch) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var swatches = Array.prototype.slice.call(dropdown.querySelectorAll(".theme-swatch"));
+        var si = swatches.indexOf(document.activeElement);
+        si = e.key === "ArrowRight"
+          ? (si < swatches.length - 1 ? si + 1 : 0)
+          : (si > 0 ? si - 1 : swatches.length - 1);
+        swatches[si].focus();
+        return;
+      }
+
+      // Up / Down / Home / End — navigate menu items; if on a swatch treat as idx -1
+      // so Down → first item, Up → last item (exits the swatch row naturally)
       e.preventDefault();
+      e.stopPropagation();
       var items = Array.prototype.slice.call(
         dropdown.querySelectorAll(".app-menu-item, .app-toggle-switch[tabindex]")
       ).filter(function (item) {
         return !item.closest("[hidden]") && item.offsetParent !== null;
       });
       if (!items.length) return;
-      var idx = items.indexOf(document.activeElement);
+      var idx = onSwatch ? -1 : items.indexOf(document.activeElement);
       if (e.key === "ArrowDown") {
         idx = idx < items.length - 1 ? idx + 1 : 0;
       } else if (e.key === "ArrowUp") {
@@ -227,35 +328,51 @@
 
     function openResetModal() {
       if (!overlay) return;
-      // Reset the input + button state each open
-      if (confirmInput) {
-        confirmInput.value = "";
-        confirmInput.classList.remove("is-valid");
-      }
-      if (confirmBtn) confirmBtn.disabled = true;
+      // Reset toggles to defaults: entries on, name + settings off
+      var toggleTasks    = document.getElementById("resetToggleTasks");
+      var toggleName     = document.getElementById("resetToggleName");
+      var toggleSettings = document.getElementById("resetToggleSettings");
+      if (toggleTasks)    toggleTasks.setAttribute("aria-checked", "true");
+      if (toggleName)     toggleName.setAttribute("aria-checked", "false");
+      if (toggleSettings) toggleSettings.setAttribute("aria-checked", "false");
+      // Re-enable confirm button (at least one toggle is on by default)
+      if (confirmBtn) confirmBtn.disabled = false;
       overlay.hidden = false;
-      if (confirmInput) confirmInput.focus();
+      if (confirmBtn) confirmBtn.focus();
     }
 
     function closeResetModal() {
       if (!overlay) return;
       overlay.hidden = true;
-      if (confirmInput) confirmInput.value = "";
-      if (confirmBtn) confirmBtn.disabled = true;
       btn.focus();
     }
 
-    // Type-to-confirm: enable the button only when input === "reset"
-    if (confirmInput && confirmBtn) {
-      confirmInput.addEventListener("input", function () {
-        var valid = confirmInput.value.trim().toLowerCase() === "reset";
-        confirmBtn.disabled = !valid;
-        confirmInput.classList.toggle("is-valid", valid);
-      });
-      confirmInput.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" && !confirmBtn.disabled) confirmBtn.click();
+    // Toggle switches inside the reset dialog
+    function bindResetToggle(toggleId) {
+      var el = document.getElementById(toggleId);
+      if (!el) return;
+      function toggle(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var next = el.getAttribute("aria-checked") !== "true";
+        el.setAttribute("aria-checked", String(next));
+        // Disable confirm button when all toggles are off
+        var toggleTasks    = document.getElementById("resetToggleTasks");
+        var toggleName     = document.getElementById("resetToggleName");
+        var toggleSettings = document.getElementById("resetToggleSettings");
+        var anyOn = (toggleTasks    && toggleTasks.getAttribute("aria-checked")    === "true") ||
+                    (toggleName     && toggleName.getAttribute("aria-checked")     === "true") ||
+                    (toggleSettings && toggleSettings.getAttribute("aria-checked") === "true");
+        if (confirmBtn) confirmBtn.disabled = !anyOn;
+      }
+      el.addEventListener("click", toggle);
+      el.addEventListener("keydown", function (e) {
+        if (e.key === " " || e.key === "Enter") toggle(e);
       });
     }
+    bindResetToggle("resetToggleTasks");
+    bindResetToggle("resetToggleName");
+    bindResetToggle("resetToggleSettings");
 
     btn.addEventListener("click", function (e) {
       e.stopPropagation();
@@ -273,23 +390,51 @@
     }
 
     // ── Shared reset execution ──────────────────────────────────────────────────
-    function executeReset() {
+    // opts: { clearTasks: bool, resetName: bool, resetSettings: bool }
+    // Only touches keys that belong to THIS copy. Other LBM installations
+    // (different path keys) are never read or written.
+    function executeReset(opts) {
+      var pd       = window.MCCProjectData;
+      var appKey   = (pd && pd.tracker && pd.tracker.storageKey) || "ltm-task-tracker-v1";
+      var pathname = window.location.pathname;
+
+      // Keys that belong only to this copy
+      var ownKeys = [
+        appKey,
+        appKey + "-project-name",
+        "lbm-theme:" + pathname,
+        "lbm-fresh-banner-seen:" + pathname
+      ];
+
+      // Back up only this copy's keys (never the whole localStorage)
       var backupData = {};
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k !== RESET_BACKUP_KEY) backupData[k] = localStorage.getItem(k);
-      }
-      localStorage.clear();
+      ownKeys.forEach(function (k) {
+        var v = localStorage.getItem(k);
+        if (v !== null) backupData[k] = v;
+      });
       localStorage.setItem(RESET_BACKUP_KEY, JSON.stringify(backupData));
 
-      var pd = window.MCCProjectData;
-      var appKey = (pd && pd.tracker && pd.tracker.storageKey) || "ltm-task-tracker-v1";
-      localStorage.setItem(appKey, JSON.stringify({
-        seedVersion: (pd && pd.tracker && pd.tracker.seedVersion) || "1.0",
-        tasks: [],
-        ui: {}
-      }));
-      localStorage.setItem(appKey + "-project-name", "Project Name");
+      if (opts.clearTasks) {
+        // Preserve UI state (view, sort) unless settings are also being reset
+        var existingRaw = localStorage.getItem(appKey);
+        var existingUi  = {};
+        if (existingRaw && !opts.resetSettings) {
+          try { existingUi = (JSON.parse(existingRaw).ui) || {}; } catch (_) {}
+        }
+        localStorage.setItem(appKey, JSON.stringify({
+          seedVersion: (pd && pd.tracker && pd.tracker.seedVersion) || "1.0",
+          tasks: [],
+          ui: existingUi
+        }));
+      }
+
+      if (opts.resetName) {
+        localStorage.removeItem(appKey + "-project-name");
+      }
+
+      if (opts.resetSettings) {
+        localStorage.removeItem("lbm-theme:" + pathname);
+      }
 
       location.reload();
     }
@@ -303,7 +448,14 @@
 
     if (confirmBtn) {
       confirmBtn.addEventListener("click", function () {
-        executeReset();
+        var toggleTasks    = document.getElementById("resetToggleTasks");
+        var toggleName     = document.getElementById("resetToggleName");
+        var toggleSettings = document.getElementById("resetToggleSettings");
+        executeReset({
+          clearTasks:    !toggleTasks    || toggleTasks.getAttribute("aria-checked")    === "true",
+          resetName:     toggleName     && toggleName.getAttribute("aria-checked")     === "true",
+          resetSettings: toggleSettings && toggleSettings.getAttribute("aria-checked") === "true"
+        });
       });
     }
 
@@ -336,16 +488,11 @@
       });
     }
 
-    // Override resetAppItem to skip the modal when the preference is set
     if (resetAppItem) {
       resetAppItem.removeEventListener("click", resetAppItem._lbmHandler);
       resetAppItem._lbmHandler = function () {
         closeMenu();
-        if (localStorage.getItem(SKIP_RESET_CONF_KEY) === "true") {
-          executeReset();
-        } else {
-          openResetModal();
-        }
+        openResetModal();
       };
       resetAppItem.addEventListener("click", resetAppItem._lbmHandler);
     }
@@ -416,6 +563,44 @@
       }
     };
     document.addEventListener("keydown", resetUndoKeyHandler);
+  }
+
+  // ── Keyboard shortcuts panel (Docs + Resources pages) ────────────────────────
+  function initShortcutsPanel() {
+    // index.html — handled by task-app.js
+    if (document.getElementById("taskList")) return;
+
+    var fab      = document.getElementById("shortcutsFab");
+    var panel    = document.getElementById("shortcutsPanel");
+    var closeBtn = document.getElementById("shortcutsPanelClose");
+    if (!fab || !panel || !closeBtn) return;
+
+    function openPanel()   { panel.hidden = false; fab.classList.add("is-active"); }
+    function closePanel()  { panel.hidden = true;  fab.classList.remove("is-active"); }
+    function togglePanel() { panel.hidden ? openPanel() : closePanel(); }
+
+    fab.addEventListener("click", togglePanel);
+    closeBtn.addEventListener("click", closePanel);
+
+    document.addEventListener("click", function (e) {
+      if (!panel.hidden && !panel.contains(e.target) && !fab.contains(e.target)) closePanel();
+    }, true);
+
+    document.addEventListener("keydown", function (e) {
+      var tag = document.activeElement ? document.activeElement.tagName : "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || (document.activeElement && document.activeElement.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey) return;
+
+      if (e.key === "?") {
+        e.preventDefault();
+        togglePanel();
+        return;
+      }
+      if (e.key === "Escape" && !panel.hidden) {
+        e.stopImmediatePropagation();
+        closePanel();
+      }
+    });
   }
 
   // ── Tab navigation keyboard shortcuts ────────────────────────────────────────
@@ -521,7 +706,411 @@
     });
   }
 
+  // ── New-copy setup modal ─────────────────────────────────────────────────────
+  // Replaces the old amber banner. Shows a full-screen blocking modal when this
+  // path has no custom storage key but the default key already has data (meaning
+  // another copy of LBM has been used in this browser).
+  // The user names this copy → a unique key is generated → Start Fresh isolates it.
+
+  function slugifyName(name) {
+    return (name || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/-{2,}/g, "-")
+      .replace(/^-|-$/g, "")
+      .substring(0, 40) || "my-project";
+  }
+
+  function suggestNameFromPath(pathname) {
+    var parts = pathname.split("/").filter(function (p) { return p.length > 0; });
+    // Get the folder segment (second-to-last part if last is index.html etc.)
+    var segment = parts[parts.length - 1] || "";
+    segment = segment.replace(/\.(html?|htm)$/i, "");
+    if (!segment || segment === "index") {
+      segment = parts[parts.length - 2] || "my-project";
+    }
+    // Convert slug to title-case words for the name input
+    return segment
+      .replace(/[-_]+/g, " ")
+      .replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+
+  function generateUniqueKey(slug) {
+    // Append a short time-based suffix for uniqueness
+    return slug + "-" + Date.now().toString(36).slice(-4);
+  }
+
+  // ── Case B: fresh-install data recovery modal ─────────────────────────────
+  // Shown when an install-token mismatch is detected: a new copy of LBM has
+  // been placed at the same browser path as an existing installation, so the
+  // old browser data would silently reappear. The user can keep it, wipe it,
+  // or import from a JSON backup instead.
+  function showDataRecoveryModal(overlay, pd, currentKey, installToken) {
+    var titleEl      = document.getElementById("newCopyTitle");
+    var subtitleEl   = document.getElementById("newCopySubtitle");
+    var setupSection = document.getElementById("newCopySetupSection");
+    var recSection   = document.getElementById("newCopyRecoverySection");
+    var metaEl       = document.getElementById("newCopyRecoveryMeta");
+    var keepBtn      = document.getElementById("newCopyKeepBtn");
+    var wipeBtn      = document.getElementById("newCopyWipeBtn");
+    var importInput  = document.getElementById("newCopyImportInput");
+
+    // Switch to recovery layout
+    if (setupSection) setupSection.hidden = true;
+    if (recSection)   recSection.hidden   = false;
+    if (titleEl)      titleEl.textContent = "Saved data found";
+    if (subtitleEl)   subtitleEl.textContent = "Your browser has data saved from a previous install at this location. What would you like to do?";
+
+    // Fill in task count + last-saved date from localStorage
+    if (metaEl) {
+      try {
+        var raw    = localStorage.getItem(currentKey);
+        var parsed = raw ? JSON.parse(raw) : null;
+        var count  = (parsed && Array.isArray(parsed.tasks)) ? parsed.tasks.length : 0;
+        var saved  = parsed && parsed.savedAt ? new Date(parsed.savedAt).toLocaleDateString() : null;
+        metaEl.textContent = count + " task" + (count === 1 ? "" : "s") + (saved ? " \u00B7 last saved " + saved : "");
+      } catch (_) {
+        metaEl.textContent = "";
+      }
+    }
+
+    function ackToken() {
+      try { localStorage.setItem("lbm-ack-token:" + currentKey, installToken); } catch (_) {}
+    }
+
+    // Keep: acknowledge token and dismiss — existing data is untouched
+    if (keepBtn) {
+      keepBtn.addEventListener("click", function () {
+        ackToken();
+        overlay.hidden = true;
+      });
+    }
+
+    // Start fresh: show inline confirm, wipe only on final confirmation
+    var recoveryActions = document.getElementById("newCopyRecoveryActions");
+    var wipeConfirm     = document.getElementById("newCopyWipeConfirm");
+    var wipeCancelBtn   = document.getElementById("newCopyWipeCancelBtn");
+    var wipeConfirmBtn  = document.getElementById("newCopyWipeConfirmBtn");
+
+    if (wipeBtn) {
+      wipeBtn.addEventListener("click", function () {
+        if (recoveryActions) recoveryActions.hidden = true;
+        if (wipeConfirm)     wipeConfirm.hidden     = false;
+      });
+    }
+    if (wipeCancelBtn) {
+      wipeCancelBtn.addEventListener("click", function () {
+        if (wipeConfirm)     wipeConfirm.hidden     = true;
+        if (recoveryActions) recoveryActions.hidden  = false;
+      });
+    }
+    if (wipeConfirmBtn) {
+      wipeConfirmBtn.addEventListener("click", function () {
+        try {
+          localStorage.removeItem(currentKey);
+          localStorage.removeItem(currentKey + "-snapshots");
+          localStorage.removeItem(currentKey + "-project-name");
+          // Write an empty state so seed tasks don't reload on the next page load
+          localStorage.setItem(currentKey, JSON.stringify({
+            seedVersion: (pd && pd.tracker && pd.tracker.seedVersion) || "1.0",
+            tasks: [],
+            ui: {},
+            savedAt: new Date().toISOString()
+          }));
+        } catch (_) {}
+        ackToken();
+        location.reload();
+      });
+    }
+
+    // Import: read a JSON backup, write it to localStorage, acknowledge, reload
+    if (importInput) {
+      importInput.addEventListener("change", function () {
+        var file = importInput.files && importInput.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            var parsed   = JSON.parse(e.target.result);
+            var imported = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+            if (!imported.length) { alert("No tasks found in the selected file."); return; }
+            localStorage.setItem(currentKey, JSON.stringify({
+              seedVersion: (pd && pd.tracker && pd.tracker.seedVersion) || "1.0",
+              tasks: imported,
+              ui: {},
+              savedAt: new Date().toISOString()
+            }));
+            ackToken();
+            location.reload();
+          } catch (_) {
+            alert("Could not read the file. Make sure it\u2019s a valid LBM JSON export.");
+          }
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    // Details toggle: expand/collapse saved data info
+    var detailsToggle = document.getElementById("newCopyDetailsToggle");
+    if (detailsToggle && metaEl) {
+      detailsToggle.addEventListener("click", function () {
+        var isHidden = metaEl.hidden;
+        metaEl.hidden = !isHidden;
+        detailsToggle.setAttribute("aria-expanded", isHidden ? "true" : "false");
+      });
+    }
+
+    overlay.hidden = false;
+    if (keepBtn) keepBtn.focus();
+  }
+
+  function initNewCopyModal() {
+    var overlay = document.getElementById("newCopyOverlay");
+    if (!overlay) return;
+
+    // Only show on the main app page
+    if (!document.getElementById("toggleInfoButton")) return;
+
+    var pathname     = window.location.pathname;
+    var pd           = window.MCCProjectData;
+    var currentKey   = (pd && pd.tracker && pd.tracker.storageKey) || "ltm-task-tracker-v1";
+    var installToken = pd && pd.tracker && pd.tracker.installToken;
+
+    // ── Case B: same path, fresh copy detected via install-token mismatch ──
+    if (installToken) {
+      var storedToken = localStorage.getItem("lbm-ack-token:" + currentKey);
+      var hasData     = !!localStorage.getItem(currentKey);
+      if (storedToken !== installToken && hasData) {
+        showDataRecoveryModal(overlay, pd, currentKey, installToken);
+        return;
+      }
+      // No existing data (clean install) — store token so future loads skip this check
+      if (!storedToken && !hasData) {
+        try { localStorage.setItem("lbm-ack-token:" + currentKey, installToken); } catch (_) {}
+      }
+    }
+
+    // ── Case A: different-path install — data exists under the default key ──
+    if (localStorage.getItem("lbm-path-key:" + pathname)) return;
+    if (!localStorage.getItem(currentKey)) return;
+    if (localStorage.getItem("lbm-new-copy-skip:" + pathname)) return;
+
+    var nameInput = document.getElementById("newCopyNameInput");
+    var keyInput  = document.getElementById("newCopyKeyInput");
+    var startBtn  = document.getElementById("newCopyStartBtn");
+    var skipBtn   = document.getElementById("newCopySkipBtn");
+    var advToggle = document.getElementById("newCopyAdvancedToggle");
+    var advPanel  = document.getElementById("newCopyAdvancedPanel");
+
+    if (!nameInput || !keyInput || !startBtn || !skipBtn) return;
+
+    // Pre-fill name and auto-generate key
+    var suggestedName = suggestNameFromPath(pathname);
+    nameInput.value   = suggestedName;
+    keyInput.value    = generateUniqueKey(slugifyName(suggestedName));
+
+    // Regenerate key live as user types the name
+    nameInput.addEventListener("input", function () {
+      var slug = slugifyName(nameInput.value.trim() || suggestedName);
+      keyInput.value = generateUniqueKey(slug);
+    });
+
+    // Advanced toggle
+    if (advToggle && advPanel) {
+      advToggle.addEventListener("click", function () {
+        var isOpen = !advPanel.hidden;
+        advPanel.hidden = isOpen;
+        advToggle.setAttribute("aria-expanded", String(!isOpen));
+      });
+    }
+
+    // Sanitize key (same rules as saveStorageKey in task-app.js)
+    function sanitizeKey(raw) {
+      return (raw || "")
+        .replace(/[^a-zA-Z0-9_-]/g, "-")
+        .replace(/-{2,}/g, "-")
+        .replace(/^-|-$/g, "");
+    }
+
+    // Start Fresh: create isolated storage for this copy and reload
+    startBtn.addEventListener("click", function () {
+      var projectName = nameInput.value.trim() || suggestedName;
+      var newKey = sanitizeKey(keyInput.value.trim());
+      if (!newKey) newKey = generateUniqueKey(slugifyName(projectName));
+
+      try {
+        localStorage.setItem("lbm-path-key:" + pathname, newKey);
+        localStorage.setItem(newKey + "-project-name", projectName);
+        localStorage.setItem(newKey, JSON.stringify({
+          seedVersion: (pd && pd.tracker && pd.tracker.seedVersion) || "1.0",
+          tasks: [],
+          ui: {}
+        }));
+      } catch (_) {}
+      location.reload();
+    });
+
+    // Enter key submits
+    nameInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") startBtn.click();
+    });
+    keyInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") startBtn.click();
+    });
+
+    // Use existing data: record dismissal, close modal (user accepts shared key)
+    skipBtn.addEventListener("click", function () {
+      try { localStorage.setItem("lbm-new-copy-skip:" + pathname, "1"); } catch (_) {}
+      overlay.hidden = true;
+    });
+
+    // Show the modal
+    overlay.hidden = false;
+    nameInput.focus();
+    nameInput.select();
+  }
+
+  // ── Storage GC ────────────────────────────────────────────────────────────
+  // Scans localStorage and classifies keys into orphaned families (no longer
+  // referenced by any lbm-path-key:* entry and not the active key) and keys
+  // that are safe to auto-prune silently (no real task data).
+
+  // Known singleton/meta prefixes that are never storage-key roots themselves
+  var META_PREFIXES = ["lbm-", "lbm.", "lbm_"];
+
+  function looksLikeMetaKey(k) {
+    for (var i = 0; i < META_PREFIXES.length; i++) {
+      if (k.indexOf(META_PREFIXES[i]) === 0) return true;
+    }
+    return false;
+  }
+
+  function scanStorage() {
+    var pd         = window.MCCProjectData;
+    var activeKey  = (pd && pd.tracker && pd.tracker.storageKey) || "ltm-task-tracker-v1";
+    var allKeys    = [];
+    var safeToAutoPrune = [];
+
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        allKeys.push(localStorage.key(i));
+      }
+    } catch (_) { return { activeKey: activeKey, orphanedFamilies: [], safeToAutoPrune: [] }; }
+
+    // Build pathKeyMap: lbm-path-key:{path} → storageKey value
+    var pathKeyMap = {};
+    var skipKeys   = [];
+    allKeys.forEach(function (k) {
+      if (k.indexOf("lbm-path-key:") === 0) {
+        pathKeyMap[k.slice("lbm-path-key:".length)] = localStorage.getItem(k);
+      }
+      if (k.indexOf("lbm-new-copy-skip:") === 0) {
+        skipKeys.push(k);
+      }
+    });
+
+    // All storage keys that are currently "in use"
+    var referencedKeys = { [activeKey]: true };
+    Object.keys(pathKeyMap).forEach(function (path) {
+      var val = pathKeyMap[path];
+      if (val) referencedKeys[val] = true;
+    });
+
+    // Find storage-key candidates: non-meta keys that own a project-name or ack-token sub-key
+    var candidates = {};
+    allKeys.forEach(function (k) {
+      if (!looksLikeMetaKey(k)) {
+        candidates[k] = true; // bare key itself might be a root
+      }
+      // A key like "lbm-ack-token:{x}" reveals {x} as a root
+      if (k.indexOf("lbm-ack-token:") === 0) {
+        candidates[k.slice("lbm-ack-token:".length)] = true;
+      }
+      // A key like "{x}-project-name" reveals {x} as a root
+      if (k.slice(-"-project-name".length) === "-project-name") {
+        candidates[k.slice(0, k.length - "-project-name".length)] = true;
+      }
+      // A key like "{x}-snapshots" reveals {x} as a root
+      if (k.slice(-"-snapshots".length) === "-snapshots") {
+        candidates[k.slice(0, k.length - "-snapshots".length)] = true;
+      }
+    });
+
+    // Orphaned families = candidates not in referencedKeys
+    var orphanedFamilies = [];
+    Object.keys(candidates).forEach(function (candidate) {
+      if (referencedKeys[candidate]) return; // active — skip
+
+      // Confirm it's a real storage-key root (has at least one sub-key or data)
+      var hasProjectName = allKeys.indexOf(candidate + "-project-name") !== -1;
+      var hasAckToken    = allKeys.indexOf("lbm-ack-token:" + candidate) !== -1;
+      var hasSnapshots   = allKeys.indexOf(candidate + "-snapshots") !== -1;
+      var hasRoot        = allKeys.indexOf(candidate) !== -1;
+      if (!hasRoot && !hasProjectName && !hasAckToken && !hasSnapshots) return;
+
+      // Parse task data
+      var taskCount = 0;
+      var bytesEstimate = 0;
+      var raw = hasRoot ? localStorage.getItem(candidate) : null;
+      if (raw) {
+        bytesEstimate = raw.length;
+        try {
+          var parsed = JSON.parse(raw);
+          taskCount = (parsed && Array.isArray(parsed.tasks)) ? parsed.tasks.length : 0;
+        } catch (_) {}
+      }
+
+      var hasData = taskCount > 0;
+      var name    = (hasProjectName ? localStorage.getItem(candidate + "-project-name") : null) || candidate;
+
+      orphanedFamilies.push({ key: candidate, name: name, taskCount: taskCount, bytesEstimate: bytesEstimate, hasData: hasData });
+
+      // Safe to auto-prune if no task data
+      if (!hasData) {
+        if (hasRoot)        safeToAutoPrune.push(candidate);
+        if (hasProjectName) safeToAutoPrune.push(candidate + "-project-name");
+        if (hasAckToken)    safeToAutoPrune.push("lbm-ack-token:" + candidate);
+        if (hasSnapshots)   safeToAutoPrune.push(candidate + "-snapshots");
+      }
+    });
+
+    // Orphaned skip-keys: lbm-new-copy-skip:{path} with no path-key for that path
+    var currentPathname = window.location.pathname;
+    skipKeys.forEach(function (k) {
+      var path = k.slice("lbm-new-copy-skip:".length);
+      if (path !== currentPathname && !pathKeyMap.hasOwnProperty(path)) {
+        safeToAutoPrune.push(k);
+      }
+    });
+
+    // Stale reset-backup: lbm.reset.backup older than 30 min or corrupt
+    var backupRaw = localStorage.getItem("lbm.reset.backup");
+    if (backupRaw) {
+      var pruneBackup = false;
+      try {
+        var bp = JSON.parse(backupRaw);
+        var savedAt = bp && bp.savedAt ? new Date(bp.savedAt).getTime() : 0;
+        if (!savedAt || Date.now() - savedAt > 30 * 60 * 1000) pruneBackup = true;
+      } catch (_) { pruneBackup = true; }
+      if (pruneBackup) safeToAutoPrune.push("lbm.reset.backup");
+    }
+
+    return { activeKey: activeKey, orphanedFamilies: orphanedFamilies, safeToAutoPrune: safeToAutoPrune };
+  }
+
+  function autoPruneStorage(scanResult) {
+    var removed = 0;
+    (scanResult.safeToAutoPrune || []).forEach(function (k) {
+      try { localStorage.removeItem(k); removed++; } catch (_) {}
+    });
+    return removed;
+  }
+
   function init() {
+    // Apply stored theme immediately so there's no flash of default color
+    var storedTheme = localStorage.getItem(themeStorageKey());
+    if (storedTheme) applyTheme(storedTheme);
+
     var brandName = document.getElementById("brandName");
     if (brandName) {
       brandName.textContent = localStorage.getItem(storageKey()) || defaultName();
@@ -558,9 +1147,25 @@
 
     initTabIndicator();
     initPageTransitions();
+    initShortcutsPanel();
     initTabShortcuts();
     initResetUndo();
+    initNewCopyModal();
     initAppMenu();
+
+    // Storage GC: run after all key resolution is complete
+    try {
+      var _scanResult = scanStorage();
+      var _pruned     = autoPruneStorage(_scanResult);
+      if (_pruned > 0) _scanResult = scanStorage(); // re-scan for accurate badge count
+      window._lbmStorageScan = { result: _scanResult, pruned: _pruned, rescan: scanStorage };
+
+      // Badge: count of orphaned families that still have task data
+      var _badgeCount = 0;
+      _scanResult.orphanedFamilies.forEach(function (f) { if (f.hasData) _badgeCount++; });
+      var badge = document.getElementById("storageAuditBadge");
+      if (badge) { badge.textContent = _badgeCount; badge.hidden = _badgeCount === 0; }
+    } catch (_) {}
   }
 
   if (document.readyState === "loading") {

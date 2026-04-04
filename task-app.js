@@ -30,6 +30,19 @@
   };
   const tracker = data.tracker;
   const STORAGE_KEY = tracker.storageKey;
+  const DEFAULT_STORAGE_KEY = "ltm-task-tracker-v1";
+
+  function suggestKeyFromPath(pathname) {
+    var parts = pathname.split("/").filter(function (p) { return p.length > 0; });
+    var segment = parts[parts.length - 1] || "my-project";
+    segment = segment.replace(/\.(html?|htm)$/i, "");
+    return segment
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/-{2,}/g, "-")
+      .replace(/^-|-$/g, "")
+      .substring(0, 40) || "my-project";
+  }
 
   /* ── Lane / column definitions ─────────────────────────────────────────────── */
 
@@ -78,6 +91,8 @@
   let dragTaskId        = null;
   let colDragKey        = null; // column key being dragged for reorder
   let colDropInsertIdx  = null; // insertion index during column drag (0 = before first)
+
+  let currentEnterHandler = null; // single Enter handler for focused list row
 
   // Multi-select state
   let selectedTaskIds  = new Set(); // task IDs currently selected via lasso drag
@@ -130,17 +145,26 @@
   let toolbarCollapsed = false;
 
   // Property display order and custom labels
-  const DEFAULT_PROP_ORDER  = ["stage", "urgency", "value", "area", "modified"];
-  const DEFAULT_PROP_LABELS = { stage: "Stage", urgency: "Urgency", value: "Value", area: "Area", modified: "Modified" };
+  const DEFAULT_PROP_ORDER  = ["value", "stage", "urgency", "area", "modified"];
+  const DEFAULT_PROP_LABELS = { stage: "Stage", urgency: "Urgency", value: "Dollar Value", area: "Area", modified: "Modified" };
   let detailPropOrder  = [...DEFAULT_PROP_ORDER];
   let propLabels       = { ...DEFAULT_PROP_LABELS };
   let propDragSrcIdx   = null; // index of property row being dragged
   let propsCollapsed   = false; // whether the properties section is collapsed
   let lastDeletedRowIndex = -1; // index of last deleted row in the list, for ←/→ navigation
 
+  // List view text size level: -2 (compact) → 0 (default) → +2 (extra large)
+  let listSizeLevel = 0;
+
   // Undo stack — in-memory only, cleared on page reload
   const UNDO_LIMIT = 30;
   let undoStack = []; // [{ type, ...payload }]
+
+  // Restore points
+  var _lastSnapshotTime     = 0;
+  var _snapshotDebounceTimer = null;
+  var SNAPSHOT_DEBOUNCE_MS  = 30 * 60 * 1000; // 30 minutes
+  var SNAPSHOT_MAX          = 25;
 
   /* ── Element references ────────────────────────────────────────────────────── */
 
@@ -269,7 +293,13 @@
     menuAppInfo:         document.getElementById("menuAppInfo"),
     menuExportJson:      document.getElementById("menuExportJson"),
     menuExportMarkdown:  document.getElementById("menuExportMarkdown"),
-    menuResetSeed:       document.getElementById("menuResetSeed"),
+    menuImportJson:      document.getElementById("menuImportJson"),
+    menuStorageAudit:    document.getElementById("menuStorageAudit"),
+    storageAuditModal:   document.getElementById("storageAuditModal"),
+    storageAuditClose:   document.getElementById("storageAuditClose"),
+    storageAuditDone:    document.getElementById("storageAuditDone"),
+    auditBody:           document.getElementById("auditBody"),
+    auditAutoCleaned:    document.getElementById("auditAutoCleaned"),
 
     // Reset app modal (controlled by header.js)
     resetAppOverlay:     document.getElementById("resetAppOverlay"),
@@ -278,7 +308,13 @@
     multiActionBar:    document.getElementById("multiActionBar"),
     multiActionCount:  document.getElementById("multiActionCount"),
     multiActionDelete: document.getElementById("multiActionDelete"),
-    multiActionClear:  document.getElementById("multiActionClear")
+    multiActionClear:  document.getElementById("multiActionClear"),
+
+    // Restore points modal
+    restoreModal:      document.getElementById("restoreModal"),
+    restoreModalClose: document.getElementById("restoreModalClose"),
+    restoreList:       document.getElementById("restoreList"),
+    menuRestorePoints: document.getElementById("menuRestorePoints")
   };
 
   /* ── Boot ───────────────────────────────────────────────────────────────────── */
@@ -297,6 +333,11 @@
     if (state.ui.toolbarCollapsed !== undefined) toolbarCollapsed = Boolean(state.ui.toolbarCollapsed);
     if (Array.isArray(state.ui.detailPropOrder)) detailPropOrder = state.ui.detailPropOrder;
     if (state.ui.propLabels) propLabels = Object.assign({}, DEFAULT_PROP_LABELS, state.ui.propLabels);
+    // Always enforce: "Dollar Value" label and "value" first in detail order
+    propLabels.value = "Dollar Value";
+    if (detailPropOrder.includes("value") && detailPropOrder[0] !== "value") {
+      detailPropOrder = ["value", ...detailPropOrder.filter(k => k !== "value")];
+    }
     if (state.ui.propsCollapsed !== undefined) propsCollapsed = Boolean(state.ui.propsCollapsed);
     if (state.ui.listSort) {
       // Backwards compat: old single-key values → criteria mode with that key first
@@ -330,11 +371,22 @@
 
     el.storageStatus.textContent = "Self-contained: seed data in project-data.js + browser localStorage. No external database needed.";
 
+    listSizeLevel = parseInt(localStorage.getItem("lbm_listSize") || "0", 10);
+    applyListSize(listSizeLevel, false);
+
     populateAreaSelect();
     populateLaneSelect();
     bindEvents();
     initLasso();
     render();
+
+    // Restore points: snapshot at session boundaries
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "hidden") createSnapshot("Auto");
+    });
+    window.addEventListener("pagehide", function () {
+      createSnapshot("Auto");
+    });
   }
 
   /* ── State persistence ──────────────────────────────────────────────────────── */
@@ -399,6 +451,383 @@
       },
       savedAt: new Date().toISOString()
     }));
+    maybeQueueSnapshot();
+  }
+
+  /* ── Restore points ─────────────────────────────────────────────────────────── */
+
+  function loadSnapshots() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY + "-snapshots");
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveSnapshots(snaps) {
+    try {
+      localStorage.setItem(STORAGE_KEY + "-snapshots", JSON.stringify(snaps));
+    } catch (_) {
+      // Quota hit — drop oldest and retry once
+      if (snaps.length > 1) saveSnapshots(snaps.slice(0, snaps.length - 1));
+    }
+  }
+
+  function createSnapshot(label) {
+    var snap = {
+      id:          "snap-" + Date.now(),
+      label:       label || "Auto",
+      savedAt:     new Date().toISOString(),
+      taskCount:   tasks.length,
+      seedVersion: tracker.seedVersion,
+      tasks:       JSON.parse(JSON.stringify(tasks))
+    };
+    var snaps = loadSnapshots();
+    snaps.unshift(snap);
+    if (snaps.length > SNAPSHOT_MAX) snaps = snaps.slice(0, SNAPSHOT_MAX);
+    saveSnapshots(snaps);
+    _lastSnapshotTime = Date.now();
+  }
+
+  function maybeQueueSnapshot() {
+    clearTimeout(_snapshotDebounceTimer);
+    _snapshotDebounceTimer = setTimeout(function () {
+      if (Date.now() - _lastSnapshotTime >= SNAPSHOT_DEBOUNCE_MS) {
+        createSnapshot("Auto");
+      }
+    }, 1500);
+  }
+
+  function revertToSnapshot(snapId) {
+    var snaps  = loadSnapshots();
+    var target = null;
+    for (var i = 0; i < snaps.length; i++) {
+      if (snaps[i].id === snapId) { target = snaps[i]; break; }
+    }
+    if (!target) return;
+
+    createSnapshot("Before revert");
+    tasks = target.tasks.map(normalizeTask);
+    writeState();
+    render();
+    closeRestoreModal();
+
+    var menu = window._lbmAppMenu;
+    if (menu && menu.createUndoBanner) {
+      menu.createUndoBanner(
+        "Reverted to restore point from " + formatSnapshotDate(target.savedAt) + ".",
+        function () {
+          var latestSnaps = loadSnapshots();
+          var before = latestSnaps[0];
+          if (before && before.label === "Before revert") {
+            tasks = before.tasks.map(normalizeTask);
+            writeState();
+            render();
+            saveSnapshots(latestSnaps.slice(1));
+          }
+        },
+        null
+      );
+    }
+  }
+
+  function formatSnapshotDate(isoString) {
+    try {
+      var d    = new Date(isoString);
+      var now  = new Date();
+      var diff = now - d;
+      if (diff < 60000)          return "Just now";
+      if (diff < 3600000)        return Math.floor(diff / 60000) + "m ago";
+      if (diff < 86400000)       return Math.floor(diff / 3600000) + "h ago";
+      if (diff < 7 * 86400000)   return Math.floor(diff / 86400000) + "d ago";
+      return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) +
+        " " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    } catch (_) {
+      return isoString;
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function openRestoreModal() {
+    renderRestoreList();
+    el.restoreModal.hidden = false;
+    el.restoreModal.focus();
+  }
+
+  function closeRestoreModal() {
+    el.restoreModal.hidden = true;
+    if (el.appMenuBtn) el.appMenuBtn.focus();
+  }
+
+  /* ── Storage audit ──────────────────────────────────────────────────────── */
+
+  function openStorageAudit() {
+    const scan   = window._lbmStorageScan ? window._lbmStorageScan.rescan() : { orphanedFamilies: [], safeToAutoPrune: [] };
+    const pruned = window._lbmStorageScan ? window._lbmStorageScan.pruned  : 0;
+    renderStorageAudit(scan, pruned);
+    el.storageAuditModal.hidden = false;
+    el.storageAuditClose.focus();
+  }
+
+  function closeStorageAudit() {
+    el.storageAuditModal.hidden = true;
+    if (el.appMenuBtn) el.appMenuBtn.focus();
+  }
+
+  function renderStorageAudit(scan, pruned) {
+    const body = el.auditBody;
+    body.innerHTML = "";
+
+    // Auto-cleaned notice
+    if (el.auditAutoCleaned) {
+      if (pruned > 0) {
+        el.auditAutoCleaned.textContent = "Removed " + pruned + " empty orphan" + (pruned === 1 ? "" : "s") + " automatically on load.";
+        el.auditAutoCleaned.hidden = false;
+      } else {
+        el.auditAutoCleaned.hidden = true;
+      }
+    }
+
+    const withData    = scan.orphanedFamilies.filter(f => f.hasData);
+    const withoutData = scan.orphanedFamilies.filter(f => !f.hasData);
+
+    function refreshAudit() {
+      const fresh = window._lbmStorageScan ? window._lbmStorageScan.rescan() : scan;
+      renderStorageAudit(fresh, pruned);
+      // Update badge
+      let count = 0;
+      fresh.orphanedFamilies.forEach(f => { if (f.hasData) count++; });
+      const badge = document.getElementById("storageAuditBadge");
+      if (badge) { badge.textContent = count; badge.hidden = count === 0; }
+    }
+
+    function formatBytes(n) {
+      return n > 1024 ? (n / 1024).toFixed(1) + " KB" : n + " B";
+    }
+
+    // ── Section 1: orphaned families with task data ──
+    if (withData.length > 0) {
+      const label = document.createElement("p");
+      label.className = "audit-section-label";
+      label.textContent = "Orphaned installs with saved data";
+      body.appendChild(label);
+
+      withData.forEach(function (fam) {
+        const row = document.createElement("div");
+        row.className = "audit-family-row";
+
+        const name = document.createElement("div");
+        name.className = "audit-family-name";
+        name.textContent = fam.name;
+        row.appendChild(name);
+
+        const meta = document.createElement("div");
+        meta.className = "audit-family-meta";
+        meta.textContent = fam.taskCount + " task" + (fam.taskCount === 1 ? "" : "s") +
+          (fam.bytesEstimate ? " \u00B7 ~" + formatBytes(fam.bytesEstimate) : "") +
+          " \u00B7 key: " + fam.key;
+        row.appendChild(meta);
+
+        const actions = document.createElement("div");
+        actions.className = "audit-family-actions";
+
+        // Delete button
+        const delBtn = document.createElement("button");
+        delBtn.className = "ghost";
+        delBtn.type = "button";
+        delBtn.textContent = "Delete";
+        delBtn.addEventListener("click", function () {
+          actions.hidden = true;
+          const confirmRow = document.createElement("div");
+          confirmRow.className = "audit-confirm-row";
+          confirmRow.innerHTML =
+            "<span>Delete all data for \u201C" + fam.name + "\u201D? Cannot be undone.</span>";
+          const yesBtn = document.createElement("button");
+          yesBtn.className = "danger";
+          yesBtn.type = "button";
+          yesBtn.textContent = "Confirm";
+          yesBtn.addEventListener("click", function () {
+            try {
+              localStorage.removeItem(fam.key);
+              localStorage.removeItem(fam.key + "-snapshots");
+              localStorage.removeItem(fam.key + "-project-name");
+              localStorage.removeItem("lbm-ack-token:" + fam.key);
+            } catch (_) {}
+            refreshAudit();
+          });
+          const noBtn = document.createElement("button");
+          noBtn.className = "ghost";
+          noBtn.type = "button";
+          noBtn.textContent = "Cancel";
+          noBtn.addEventListener("click", function () { confirmRow.remove(); actions.hidden = false; });
+          confirmRow.appendChild(yesBtn);
+          confirmRow.appendChild(noBtn);
+          row.appendChild(confirmRow);
+        });
+        actions.appendChild(delBtn);
+
+        // Export & Delete button
+        const exportDelBtn = document.createElement("button");
+        exportDelBtn.className = "ghost";
+        exportDelBtn.type = "button";
+        exportDelBtn.textContent = "Export \u0026 Delete";
+        exportDelBtn.addEventListener("click", function () {
+          try {
+            const raw  = localStorage.getItem(fam.key);
+            const data = raw ? JSON.parse(raw) : { tasks: [] };
+            const dt   = new Date().toISOString().slice(0, 10);
+            download(
+              "lbm-" + fam.key + "-" + dt + ".json",
+              JSON.stringify({ project: { name: fam.name }, exportedAt: new Date().toISOString(), tasks: data.tasks || [] }, null, 2),
+              "application/json"
+            );
+          } catch (_) {}
+          setTimeout(function () {
+            try {
+              localStorage.removeItem(fam.key);
+              localStorage.removeItem(fam.key + "-snapshots");
+              localStorage.removeItem(fam.key + "-project-name");
+              localStorage.removeItem("lbm-ack-token:" + fam.key);
+            } catch (_) {}
+            refreshAudit();
+          }, 600);
+        });
+        actions.appendChild(exportDelBtn);
+
+        row.appendChild(actions);
+        body.appendChild(row);
+      });
+    }
+
+    // ── Section 2: orphaned path mappings (no data) ──
+    const orphanedPathKeys = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.indexOf("lbm-path-key:") === 0) {
+          const targetKey = localStorage.getItem(k);
+          const hasData   = withData.some(f => f.key === targetKey);
+          const inActive  = targetKey === STORAGE_KEY;
+          if (!hasData && !inActive) orphanedPathKeys.push({ storageKey: k, targetKey });
+        }
+      }
+    } catch (_) {}
+
+    if (orphanedPathKeys.length > 0) {
+      const label2 = document.createElement("p");
+      label2.className = "audit-section-label";
+      label2.textContent = "Orphaned path mappings";
+      body.appendChild(label2);
+
+      orphanedPathKeys.forEach(function (entry) {
+        const row = document.createElement("div");
+        row.className = "audit-path-row";
+        const pathText = document.createElement("span");
+        pathText.className = "audit-path-value";
+        pathText.textContent = entry.storageKey.slice("lbm-path-key:".length) + " \u2192 " + (entry.targetKey || "(empty)");
+        row.appendChild(pathText);
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "ghost";
+        removeBtn.type = "button";
+        removeBtn.textContent = "Remove";
+        removeBtn.style.flexShrink = "0";
+        removeBtn.addEventListener("click", function () {
+          try { localStorage.removeItem(entry.storageKey); } catch (_) {}
+          refreshAudit();
+        });
+        row.appendChild(removeBtn);
+        body.appendChild(row);
+      });
+    }
+
+    // ── Clean state ──
+    if (withData.length === 0 && orphanedPathKeys.length === 0) {
+      const clean = document.createElement("div");
+      clean.className = "audit-clean-state";
+      clean.innerHTML =
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+          'stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<polyline points="20 6 9 17 4 12"/>' +
+        '</svg>' +
+        '<span>Your storage is clean.</span>';
+      body.appendChild(clean);
+    }
+  }
+
+  function renderRestoreList() {
+    var snaps = loadSnapshots();
+    var list  = el.restoreList;
+    list.innerHTML = "";
+
+    if (snaps.length === 0) {
+      list.innerHTML =
+        '<div class="rp-empty">' +
+          '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+            'stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' +
+          '</svg>' +
+          '<p>No restore points yet.</p>' +
+          '<p class="rp-empty-sub">Restore points are saved automatically as you work. ' +
+            'Come back after making some changes.</p>' +
+        '</div>';
+      return;
+    }
+
+    snaps.forEach(function (snap) {
+      var row        = document.createElement("div");
+      row.className  = "rp-row";
+
+      var isBeforeRevert = (snap.label === "Before revert");
+      var labelClass     = isBeforeRevert ? "rp-label rp-label--before-revert" : "rp-label";
+
+      row.innerHTML =
+        '<div class="rp-row-info">' +
+          '<span class="' + labelClass + '">' + escapeHtml(snap.label) + '</span>' +
+          '<span class="rp-meta">' +
+            '<span class="rp-timestamp" title="' + escapeHtml(snap.savedAt) + '">' +
+              escapeHtml(formatSnapshotDate(snap.savedAt)) +
+            '</span>' +
+            '<span class="rp-task-count">' + snap.taskCount + ' task' +
+              (snap.taskCount !== 1 ? 's' : '') +
+            '</span>' +
+          '</span>' +
+        '</div>' +
+        '<div class="rp-row-actions">' +
+          '<button class="ghost rp-revert-btn" type="button" data-snap-id="' +
+            escapeHtml(snap.id) + '">Revert</button>' +
+        '</div>';
+
+      list.appendChild(row);
+    });
+
+    list.addEventListener("click", function (e) {
+      var btn = e.target.closest(".rp-revert-btn");
+      if (!btn) return;
+      if (btn.dataset.confirming === "true") {
+        revertToSnapshot(btn.dataset.snapId);
+        return;
+      }
+      btn.textContent           = "Confirm?";
+      btn.dataset.confirming    = "true";
+      btn.classList.add("rp-revert-btn--confirm");
+      setTimeout(function () {
+        if (btn.dataset.confirming === "true") {
+          btn.textContent        = "Revert";
+          btn.dataset.confirming = "false";
+          btn.classList.remove("rp-revert-btn--confirm");
+        }
+      }, 4000);
+    });
   }
 
   /* ── Task normalisation ─────────────────────────────────────────────────────── */
@@ -442,22 +871,40 @@
 
   function bindEvents() {
     // App menu — Actions-page items (menu toggle handled by header.js)
-    el.menuAppInfo.addEventListener("click",        () => { closeAppMenu(); toggleInfo(); });
-    el.menuExportJson.addEventListener("click",     () => { closeAppMenu(); exportJson(); });
-    el.menuExportMarkdown.addEventListener("click", () => { closeAppMenu(); exportMarkdown(); });
-    el.menuResetSeed.addEventListener("click",      () => { closeAppMenu(); resetToSeed(); });
+    el.menuAppInfo.addEventListener("click",           () => { closeAppMenu(); toggleInfo(); });
+    el.menuExportJson.addEventListener("click",        () => { closeAppMenu(); exportJson(); });
+    el.menuExportMarkdown.addEventListener("click",    () => { closeAppMenu(); exportMarkdown(); });
+    if (el.menuImportJson) el.menuImportJson.addEventListener("click", () => { closeAppMenu(); importJson(); });
+    el.menuRestorePoints.addEventListener("click",     () => { closeAppMenu(); openRestoreModal(); });
+    if (el.menuStorageAudit) el.menuStorageAudit.addEventListener("click", () => { closeAppMenu(); openStorageAudit(); });
+
+    // Storage audit modal
+    if (el.storageAuditClose) el.storageAuditClose.addEventListener("click", closeStorageAudit);
+    if (el.storageAuditDone)  el.storageAuditDone.addEventListener("click",  closeStorageAudit);
+    if (el.storageAuditModal) el.storageAuditModal.addEventListener("click", e => { if (e.target === el.storageAuditModal) closeStorageAudit(); });
+
+    // Restore points modal
+    el.restoreModalClose.addEventListener("click", closeRestoreModal);
+    el.restoreModal.addEventListener("click", function (e) {
+      if (e.target === el.restoreModal) closeRestoreModal();
+    });
 
     // Info panel
     el.toggleInfoButton.addEventListener("click", toggleInfo);
     el.exportJsonButton.addEventListener("click", exportJson);
     el.exportMarkdownButton.addEventListener("click", exportMarkdown);
-    el.resetButton.addEventListener("click", resetToSeed);
+    el.resetButton.addEventListener("click", function () {
+      if (window._lbmAppMenu && window._lbmAppMenu.openResetModal) {
+        window._lbmAppMenu.openResetModal();
+      }
+    });
 
     // Storage key
     if (el.storageKeyValue) el.storageKeyValue.textContent = STORAGE_KEY;
     if (el.storageKeyChangeBtn) {
       el.storageKeyChangeBtn.addEventListener("click", function () {
-        el.storageKeyInput.value = STORAGE_KEY;
+        var isDefault = (STORAGE_KEY === DEFAULT_STORAGE_KEY);
+        el.storageKeyInput.value = isDefault ? suggestKeyFromPath(window.location.pathname) : STORAGE_KEY;
         el.storageKeyEditor.hidden = false;
         el.storageKeyChangeBtn.hidden = true;
         el.storageKeyValue.hidden = true;
@@ -748,14 +1195,31 @@
     // Global keyboard shortcuts
     document.addEventListener("keydown", e => {
       if (e.key === "Escape") {
+        // Reset app overlay (managed by header.js, exposed via window._lbmAppMenu)
+        const resetOverlay = document.getElementById("resetAppOverlay");
+        if (resetOverlay && !resetOverlay.hidden) {
+          if (window._lbmAppMenu && window._lbmAppMenu.closeResetModal) window._lbmAppMenu.closeResetModal();
+          else resetOverlay.hidden = true;
+          return;
+        }
+        // New copy / setup overlay (managed by header.js) — Escape = skip/dismiss
+        const newCopyOverlay = document.getElementById("newCopyOverlay");
+        if (newCopyOverlay && !newCopyOverlay.hidden) {
+          const skipBtn = document.getElementById("newCopySkipBtn");
+          if (skipBtn && !skipBtn.closest("[hidden]")) skipBtn.click();
+          else newCopyOverlay.hidden = true;
+          return;
+        }
         // Delete confirm dialog (belt-and-suspenders alongside its own inner handler)
         const deleteOverlay = document.querySelector(".delete-confirm-overlay");
         if (deleteOverlay)              { deleteOverlay.remove(); return; }
         // Modals
-        if (!el.shortcutsPanel.hidden) { closeShortcutsPanel(); return; }
-        if (!el.taskModal.hidden)      { closeTaskModal(); return; }
-        if (!el.renameModal.hidden)    { closeRenameModal(); return; }
-        if (!el.addColModal.hidden)    { closeAddColModal(); return; }
+        if (!el.shortcutsPanel.hidden)  { closeShortcutsPanel(); return; }
+        if (!el.taskModal.hidden)       { closeTaskModal(); return; }
+        if (!el.renameModal.hidden)     { closeRenameModal(); return; }
+        if (!el.addColModal.hidden)     { closeAddColModal(); return; }
+        if (el.restoreModal && !el.restoreModal.hidden) { closeRestoreModal(); return; }
+        if (el.storageAuditModal && !el.storageAuditModal.hidden) { closeStorageAudit(); return; }
         if (!el.detailOverlay.hidden)  { closeDetail(); return; }
         // App menu
         if (el.appMenuDropdown && !el.appMenuDropdown.hidden) { closeAppMenu(); return; }
@@ -785,13 +1249,28 @@
       if (e.key === "n" || e.key === "N") { e.preventDefault(); openTaskModal(null); return; }
       if (e.key === "?")                  { e.preventDefault(); toggleShortcutsPanel(); return; }
       if (e.key === "/") { e.preventDefault(); toggleSearch(true); return; }
-      if (e.shiftKey && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        // If any menu/popover is open, capture arrow keys for item navigation — never scroll
+        const overlay = getActiveMenuOverlay();
+        if (overlay) {
+          e.preventDefault();
+          navigateMenuItems(overlay, e.key === "ArrowDown" ? 1 : -1);
+          return;
+        }
+        // Shift+Arrow = page scroll
+        if (e.shiftKey) {
+          e.preventDefault();
+          window.scrollBy({ top: e.key === "ArrowDown" ? 120 : -120, behavior: "smooth" });
+          return;
+        }
+        // Plain Arrow = navigate list rows
         e.preventDefault();
-        window.scrollBy({ top: e.key === "ArrowDown" ? 120 : -120, behavior: "smooth" });
+        navigateListRows(e.key === "ArrowDown" ? 1 : -1);
         return;
       }
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); navigateListRows(e.key === "ArrowDown" ? 1 : -1); }
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        // App menu is open — Left/Right is for swatch navigation (handled by header.js on the dropdown element)
+        if (el.appMenuDropdown && !el.appMenuDropdown.hidden) { e.preventDefault(); return; }
         if (activeView !== "list") return;
         if (!el.detailOverlay.hidden) return;
         if (document.querySelector(".delete-confirm-overlay")) return;
@@ -799,9 +1278,19 @@
         selectAtDeletedPosition();
         return;
       }
-      // Delete / Backspace — intuitive bulk-delete for lasso selections
+      // Delete / Backspace — delete focused row or lasso selection
       if (e.key === "Delete" || e.key === "Backspace") {
         if (selectedTaskIds.size > 0) { e.preventDefault(); bulkDeleteSelected(); return; }
+        const focused = document.querySelector(".list-row.is-focused");
+        if (focused && focused.dataset.taskId) {
+          e.preventDefault();
+          const tid = focused.dataset.taskId;
+          const rows = [...el.taskList.querySelectorAll(".list-row[data-task-id]")];
+          lastDeletedRowIndex = rows.indexOf(focused);
+          focused.classList.remove("is-focused");
+          confirmDelete(() => deleteTask(tid));
+          return;
+        }
       }
       if ((e.key === "d" || e.key === "D") && e.shiftKey) {
         // Bulk delete when items are selected via lasso
@@ -839,6 +1328,17 @@
         if (activeView === "board") {
           if (window._lbmAlreadyHereNudge) window._lbmAlreadyHereNudge("Already in Board view");
         } else { setView("board"); }
+        return;
+      }
+      // List size scale — only in list view
+      if (activeView === "list" && (e.key === "+" || e.key === "=")) {
+        e.preventDefault();
+        applyListSize(listSizeLevel + 1, true);
+        return;
+      }
+      if (activeView === "list" && e.key === "-") {
+        e.preventDefault();
+        applyListSize(listSizeLevel - 1, true);
         return;
       }
     });
@@ -1061,12 +1561,48 @@
     el.multiActionClear.addEventListener("click",  dissolveSelection);
   }
 
+  /* ── Menu/overlay arrow-key navigation ─────────────────────────────────────── */
+
+  // Returns the topmost open interactive overlay that should capture arrow keys,
+  // or null if nothing is open.
+  function getActiveMenuOverlay() {
+    if (el.appMenuDropdown && !el.appMenuDropdown.hidden) return el.appMenuDropdown;
+    if (!el.colMenu.hidden)           return el.colMenu;
+    if (!el.filterPanel.hidden)       return el.filterPanel;
+    if (!el.sortPanel.hidden)         return el.sortPanel;
+    if (!el.settingsPopover.hidden)   return el.settingsPopover;
+    if (!el.cardFieldsPopover.hidden) return el.cardFieldsPopover;
+    return null;
+  }
+
+  // Move focus between buttons inside an open overlay (wraps around).
+  function navigateMenuItems(overlay, direction) {
+    const items = [...overlay.querySelectorAll("button:not([disabled])")]
+      .filter(btn => !btn.closest("[hidden]"));
+    if (!items.length) return;
+    const curr = items.indexOf(document.activeElement);
+    const next = curr === -1
+      ? (direction === 1 ? 0 : items.length - 1)
+      : (curr + direction + items.length) % items.length;
+    items[next].focus();
+  }
+
   /* ── List keyboard navigation ───────────────────────────────────────────────── */
+
+  function clearEnterHandler() {
+    if (currentEnterHandler) {
+      document.removeEventListener("keydown", currentEnterHandler);
+      currentEnterHandler = null;
+    }
+  }
 
   function navigateListRows(direction) {
     if (activeView !== "list") return;
     const rows = [...el.taskList.querySelectorAll(".list-row[data-task-id]")];
     if (!rows.length) return;
+
+    // Always replace any stale Enter handler from a previous navigation
+    clearEnterHandler();
 
     const focused = document.querySelector(".list-row.is-focused");
     let nextIdx;
@@ -1086,19 +1622,19 @@
     scrollRowIntoView(next);
 
     // Enter opens the detail panel for the focused row
-    const handleEnter = e => {
+    currentEnterHandler = e => {
       if (e.key === "Enter") {
         e.preventDefault();
-        document.removeEventListener("keydown", handleEnter);
+        clearEnterHandler();
         next.classList.remove("is-focused");
         openDetail(next.dataset.taskId);
       }
       if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Escape") {
-        document.removeEventListener("keydown", handleEnter);
+        clearEnterHandler();
         if (e.key === "Escape") next.classList.remove("is-focused");
       }
     };
-    document.addEventListener("keydown", handleEnter);
+    document.addEventListener("keydown", currentEnterHandler);
   }
 
   /* ── Jump to last-deleted position ─────────────────────────────────────────── */
@@ -1739,6 +2275,9 @@
     // Click anywhere on row (except title) opens detail panel, or toggles selection
     row.addEventListener("click", () => {
       if (selectedTaskIds.size > 0) { toggleTaskSelection(task.id); return; }
+      // Clear stale keyboard focus and Enter handler before opening via mouse
+      clearEnterHandler();
+      document.querySelectorAll(".list-row.is-focused").forEach(r => r.classList.remove("is-focused"));
       openDetail(task.id);
     });
 
@@ -2310,9 +2849,19 @@
   function closeDetail() {
     saveDetailTitle();
     saveEditorContent();
+    const restoredId = detailTaskId;
     el.detailOverlay.hidden = true;
     detailTaskId = null;
     document.body.style.overflow = "";
+    // Restore keyboard focus to the row that was open so Arrow keys pick up from here
+    if (restoredId && activeView === "list") {
+      const row = el.taskList.querySelector(`.list-row[data-task-id="${restoredId}"]`);
+      if (row) {
+        document.querySelectorAll(".list-row.is-focused").forEach(r => r.classList.remove("is-focused"));
+        row.classList.add("is-focused");
+        scrollRowIntoView(row);
+      }
+    }
   }
 
   function refreshDetailProps(t) {
@@ -2574,7 +3123,7 @@
       [
         ["urgency", propLabels.urgency || "Urgency", () => cardVisibleProps.urgency, v => { cardVisibleProps.urgency = v; }],
         ["notes",   "Notes preview",                () => cardVisibleProps.notes,   v => { cardVisibleProps.notes   = v; }],
-        ["value",   propLabels.value   || "Value",  () => cardVisibleProps.value,   v => { cardVisibleProps.value   = v; }],
+        ["value",   propLabels.value   || "Dollar Value",  () => cardVisibleProps.value,   v => { cardVisibleProps.value   = v; }],
         ["area",    propLabels.area    || "Area",   () => cardVisibleProps.area,    v => { cardVisibleProps.area    = v; }],
       ].forEach(([, label, getVal, setVal]) => {
         const row = document.createElement("label");
@@ -2849,6 +3398,21 @@
     }
   }
 
+  /* ── List view size scale ───────────────────────────────────────────────────── */
+
+  function applyListSize(level, showToast) {
+    const labels = ["Compact", "Small", "Default", "Large", "Extra Large"];
+    const clamped = Math.max(-2, Math.min(2, level));
+    listSizeLevel = clamped;
+    if (clamped === 0) {
+      el.taskList.removeAttribute("data-list-size");
+    } else {
+      el.taskList.setAttribute("data-list-size", String(clamped));
+    }
+    localStorage.setItem("lbm_listSize", String(clamped));
+    if (showToast) showUndoToast("List size: " + labels[clamped + 2]);
+  }
+
   function showUndoToast(message) {
     const existing = document.querySelector(".undo-toast");
     if (existing) existing.remove();
@@ -2964,7 +3528,7 @@
         valueInput.type = "number";
         valueInput.min = "0";
         valueInput.step = "100";
-        valueInput.placeholder = "Value $";
+        valueInput.placeholder = "Dollar Value $";
         valueInput.className = "board-inline-new-select list-inline-new-value";
         return valueInput;
       }
@@ -3035,7 +3599,8 @@
     form.appendChild(actions);
 
     el.taskList.insertBefore(form, el.taskList.firstChild);
-    titleInput.focus();
+    // Focus the first visible field in the form (respects listPropOrder)
+    (aboveInputs.length ? aboveInputs[0] : titleInput).focus();
 
     function dismiss() {
       form.remove();
@@ -3076,9 +3641,12 @@
         // Save and stay: re-render the list so the new task appears,
         // then re-insert the form at the top and re-focus
         titleInput.textContent = "";
+        if (valueInput)    valueInput.value    = "";
+        if (urgencySelect) urgencySelect.value = "3";
+        if (areaSelect)    areaSelect.value    = tracker.areas[0] || "general";
         render();
         el.taskList.insertBefore(form, el.taskList.firstChild);
-        titleInput.focus();
+        (aboveInputs.length ? aboveInputs[0] : titleInput).focus();
         // Highlight the added row; if it moved away (filtered/sorted), scroll to it
         // briefly then scroll back so the user can keep typing.
         requestAnimationFrame(() => {
@@ -3097,7 +3665,7 @@
               const GAP     = 24; // breathing room above the form
               const targetY = form.getBoundingClientRect().top + window.scrollY - stickyH - GAP;
               window.scrollTo({ top: targetY, behavior: "smooth" });
-              titleInput.focus();
+              (aboveInputs.length ? aboveInputs[0] : titleInput).focus();
             }, 900);
           }
         });
@@ -3109,11 +3677,13 @@
       }
     }
 
-    saveBtn.addEventListener("click", () => save(false));
+    saveBtn.addEventListener("click", () => save(true));
     cancelBtn.addEventListener("click", dismiss);
     titleInput.addEventListener("keydown", e => {
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); save(true); }
-      if (e.key === "Escape") { dismiss(); }
+    });
+    form.addEventListener("keydown", e => {
+      if (e.key === "Escape") { e.stopPropagation(); dismiss(); }
     });
   }
 
@@ -3434,6 +4004,32 @@
       lines.push("");
     });
     download(`ltm-tasks-${dt}.md`, lines.join("\n"), "text/markdown");
+  }
+
+  function importJson() {
+    const input = document.createElement("input");
+    input.type   = "file";
+    input.accept = ".json";
+    input.addEventListener("change", function () {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const parsed   = JSON.parse(e.target.result);
+          const imported = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+          if (!imported.length) { alert("No tasks found in the selected file."); return; }
+          if (!confirm(`Import ${imported.length} task${imported.length === 1 ? "" : "s"}? This will replace all current tasks.`)) return;
+          tasks = imported.map(normalizeTask);
+          writeState();
+          render();
+        } catch (_) {
+          alert("Could not read the file. Make sure it\u2019s a valid LBM JSON export.");
+        }
+      };
+      reader.readAsText(file);
+    });
+    input.click();
   }
 
   function resetToSeed() {

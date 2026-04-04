@@ -30,13 +30,10 @@ Local Business Manager/
 ├── styles.css             ← all styles for every page
 ├── task-app.js            ← list + board + detail panel logic
 ├── docs-app.js            ← docs viewer logic
+├── header.js              ← runs first; resolves storage key before task-app.js loads
 ├── data/docs-content.js        ← pre-rendered doc content cache
 ├── data/project-data.js        ← seed tasks, docs index, areas config
-├── docs/                  ← LBM documentation
-│   ├── LOCAL_PROJECT_SYSTEM.md    ← tracker workflow guide
-│   ├── PERSISTENCE_AND_STATE.md  ← data storage reference
-│   ├── AI_TASK_CREATION.md       ← AI + console API task creation guide
-│   └── VOICE_COMMANDS.md         ← voice input guide
+├── docs/                  ← 17 documentation files (full list in data/project-data.js)
 └── resources/             ← design assets
     └── README.md          ← how to add/manage resources
 ```
@@ -106,7 +103,7 @@ When in doubt: check the **Improvement Checklist** (Section 10) before finishing
 
 | Lane key | Display label | Active? |
 |---|---|---|
-| `newly-added-or-updated` | Newly Added or Updated | ✓ |
+| `newly-added-or-updated` | Newly Added | ✓ |
 | `backlog` | Backlog | ✓ |
 | `processing` | Processing / On Hold | ✓ |
 | `on-hold` | Processing / On Hold | ✓ |
@@ -132,7 +129,7 @@ When in doubt: check the **Improvement Checklist** (Section 10) before finishing
 
 1. **Check first.** Does a relevant doc file already exist in `docs/`? If yes, **update it** — do not create a duplicate file.
 2. **If no file exists,** create it in `docs/`.
-3. **Always sync the cache.** After any change to a `.md` doc file, update the matching entry in `data/docs-content.js`. If the doc is new, add a new entry at the appropriate position.
+3. **Always sync the cache.** After any change to a `.md` doc file, update the matching entry in `data/docs-content.js` — match the existing entry format: `{ id, title, path, content: "<rendered HTML>" }`. If the doc is new, add a new entry at the appropriate position.
 4. **Register new docs in `project-data.js`.** Add the new doc to the `docs` array so it appears in the in-app Docs tab.
 
 This rule prevents stale content in the Docs viewer and duplicate/orphaned files from accumulating over time.
@@ -156,6 +153,6 @@ This rule prevents stale content in the Docs viewer and duplicate/orphaned files
 
 ---
 
-## FUTURE: BLOCKNOTE MIGRATION
+## EDITOR INTERFACE CONSTRAINT
 
-The notes editor currently uses a styled `contenteditable` div. It is designed to be replaced with **BlockNote** (React-based block editor) in a future migration when this project gets a proper build setup. The editor interface uses `getContent()`/`setContent()`/`onChange()` patterns to keep the swap clean.
+The notes editor uses a styled `contenteditable` div. It is planned for replacement with **BlockNote** (React) in a future build setup. To keep the swap clean, do not change the `getContent()`/`setContent()`/`onChange()` interface on the editor — these are the seam that makes migration possible.

@@ -10,6 +10,7 @@ window.MCCProjectData = {
   tracker: {
     storageKey: "ltm-task-tracker-v1",
     seedVersion: "2026-03-30-r2",
+    installToken: "lbm-2026-04-04-r1",
     recommendedByLabel: "Codex (GPT-5)",
     areas: [
       "project-system",
@@ -492,116 +493,144 @@ window.MCCProjectData = {
     {
       title: "About",
       summary: "What LBM is, who it's for, and the vision behind it.",
-      path: "docs/ABOUT.md"
+      path: "docs/ABOUT.md",
+      lastUpdated: "2026-04-03"
     },
     {
       title: "Setup Guide",
-      summary: "First-time setup and customisation: get from zero to a working install in five minutes.",
-      path: "docs/SETUP_GUIDE.md"
+      summary: "Open, name your copy, add tasks, done. Advanced configuration for developers below.",
+      path: "docs/SETUP_GUIDE.md",
+      lastUpdated: "2026-04-04"
     },
     {
       title: "Developer Guide",
       summary: "Portability, embedding in larger projects, build system exclusion, storage key, .gitignore, and the documentation rule.",
-      path: "docs/DEVELOPER_GUIDE.md"
+      path: "docs/DEVELOPER_GUIDE.md",
+      lastUpdated: "2026-03-31"
     },
     {
       title: "AI Development Guide",
       summary: "Working with Claude Code: token conservation, model recommendations, the 5-location shortcut rule, and feedback loops.",
-      path: "docs/AI_DEVELOPMENT_GUIDE.md"
+      path: "docs/AI_DEVELOPMENT_GUIDE.md",
+      lastUpdated: "2026-04-01"
     },
     {
       title: "Vision and Philosophy",
       summary: "The overarching vision, three-tier rollout strategy (LBM/OBM/Agency), and the AI-in-a-box philosophy.",
-      path: "docs/VISION_AND_PHILOSOPHY.md"
+      path: "docs/VISION_AND_PHILOSOPHY.md",
+      lastUpdated: "2026-03-28"
     },
     {
       title: "Persistence and State",
       summary: "What data lives where: localStorage, seed data, reset behaviour, and how to share changes.",
-      path: "docs/PERSISTENCE_AND_STATE.md"
+      path: "docs/PERSISTENCE_AND_STATE.md",
+      lastUpdated: "2026-03-30"
     },
     {
       title: "Local Project System",
       summary: "How the local tracker, docs hub, and seed data work together. How to add tasks, docs, and skills.",
-      path: "docs/LOCAL_PROJECT_SYSTEM.md"
+      path: "docs/LOCAL_PROJECT_SYSTEM.md",
+      lastUpdated: "2026-03-30"
     },
     {
       title: "Keyboard Shortcuts",
       summary: "All keyboard shortcuts across the app: navigation, new items, search, detail panel, and board view.",
-      path: "docs/KEYBOARD_SHORTCUTS.md"
+      path: "docs/KEYBOARD_SHORTCUTS.md",
+      lastUpdated: "2026-04-01"
     },
     {
       title: "Phase Handover Plan",
       summary: "Phased build plan with copy-paste prompts for each context window.",
-      path: "PHASES.md"
+      path: "PHASES.md",
+      lastUpdated: "2026-03-28"
     },
     {
       title: "AI Task Creation",
       summary: "How to add tasks via Claude Code or the browser console API. Trigger phrases, urgency/value/area inference, field reference, and example console commands.",
-      path: "docs/AI_TASK_CREATION.md"
+      path: "docs/AI_TASK_CREATION.md",
+      lastUpdated: "2026-03-29"
     },
     {
       title: "Voice Commands",
       summary: "How to use the microphone button in the task creation form. Browser support, urgency/area keyword tables, and tips.",
-      path: "docs/VOICE_COMMANDS.md"
+      path: "docs/VOICE_COMMANDS.md",
+      lastUpdated: "2026-03-29"
     },
     {
       title: "About Skills",
       summary: "What skills are, how they differ from docs, and a guide to every skill in this project. For anyone working with Claude Code.",
-      path: "docs/ABOUT_SKILLS.md"
+      path: "docs/ABOUT_SKILLS.md",
+      lastUpdated: "2026-04-01"
     },
     {
       title: "Link Management",
       summary: "How internal doc links must be written. The docs.html?doc= format, URL routing, and the rule for Claude and AI developers.",
-      path: "docs/LINK_MANAGEMENT.md"
+      path: "docs/LINK_MANAGEMENT.md",
+      lastUpdated: "2026-04-01"
     },
     {
       title: "Product Roadmap",
       summary: "Free vs paid strategy, GitHub repo structure, backend plan, tech stack, monetization tiers, the privatization plan, and open decisions log.",
-      path: "docs/INTERNAL_ROADMAP.md"
+      path: "docs/INTERNAL_ROADMAP.md",
+      lastUpdated: "2026-04-03"
     }
   ],
   skills: [
     {
       title: "LBM Development Guide",
       summary: "How to add features, update styles, and extend the task tracker.",
-      path: "SKILL.md"
+      path: "SKILL.md",
+      lastUpdated: "2026-04-03"
     },
     {
       title: "Add a Keyboard Shortcut",
       summary: "Step-by-step process for adding any keyboard shortcut to LBM — covers all 5 locations that must be updated.",
-      path: "SKILL_ADD_SHORTCUT.md"
+      path: "SKILL_ADD_SHORTCUT.md",
+      lastUpdated: "2026-04-01"
     },
     {
       title: "Front-End Design Skill",
       summary: "Design reference for all CSS and UI work: type scale, spacing grid, color system, component patterns, motion rules, and accessibility — drawn from Linear, shadcn/ui, Material Design 3, and Apple HIG.",
-      path: "DESIGN_SKILL.md"
+      path: "DESIGN_SKILL.md",
+      lastUpdated: "2026-03-31"
     },
     {
       title: "Add a Task via Claude",
       summary: "Skill for creating LBM tasks from natural language during any Claude Code session. Covers trigger phrases, urgency/value/area inference rules, and the window.LBM.addTask() console command pattern.",
-      path: "SKILL_ADD_TASK.md"
+      path: "SKILL_ADD_TASK.md",
+      lastUpdated: "2026-03-30"
     },
     {
       title: "Claude Integration Guide",
       summary: "How to use LBM alongside other development projects. Two-tab workflow, cross-project task logging via the console API, and rules for Claude when operating in a non-LBM session.",
-      path: "CLAUDE_INTEGRATION_GUIDE.md"
+      path: "CLAUDE_INTEGRATION_GUIDE.md",
+      lastUpdated: "2026-03-31"
     }
   ],
   roadmaps: [
     {
       title: "About This Roadmap",
       summary: "Why the roadmap is public, our build-in-the-open philosophy, and how to collaborate.",
-      path: "docs/ROADMAP_ABOUT.md"
+      path: "docs/ROADMAP_ABOUT.md",
+      lastUpdated: "2026-04-01"
     },
     {
       title: "Product Roadmap",
       summary: "The three-tier product vision (Free / Pro / Business in a Box), technology principles, planned features, and open decisions.",
-      path: "docs/ROADMAP_PRODUCT.md"
+      path: "docs/ROADMAP_PRODUCT.md",
+      lastUpdated: "2026-04-01"
     },
     {
       title: "Shortcut Management System",
       summary: "Full feature specification: conflict-aware keyboard shortcut customisation across every action in LBM.",
-      path: "docs/ROADMAP_SHORTCUTS.md"
+      path: "docs/ROADMAP_SHORTCUTS.md",
+      lastUpdated: "2026-03-29"
+    },
+    {
+      title: "Documentation UX Improvements",
+      summary: "Planned pass on setup guide structure, non-developer path ordering, About ↔ Setup Guide cross-linking, and docs front-end polish.",
+      path: "docs/ROADMAP_DOCS_UX.md",
+      lastUpdated: "2026-04-03"
     }
   ]
 };
