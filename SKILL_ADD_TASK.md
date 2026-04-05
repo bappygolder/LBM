@@ -147,7 +147,9 @@ Tags are more granular than area. Assign one or more from this list:
 | Core product features, user stories | `"product"` |
 | Infrastructure, deploy, platform | `"platform"` |
 
-A task tagged `["monetization", "ux"]` means it's a UX change that directly affects revenue conversion.
+**Always include `"ai"` in the tags array for every task you create.** This is a reserved tag (cyan color) that marks tasks added by Claude — always append it regardless of other tags.
+
+A task tagged `["monetization", "ux", "ai"]` means it's a UX change that directly affects revenue conversion, added by Claude.
 
 ### Step 6 — Build the description
 
@@ -272,7 +274,7 @@ lane:        "newly-added-or-updated" | "backlog" | "processing" | "on-hold" | "
 urgency:     1 | 2 | 3 | 4 | 5
 effort:      1–10 (integer; 1 = trivial, 10 = epic — default 5)
 area:        "project-system" | "docs" | "product" | "platform" | "release" | "security" | "ui-ux"
-tags:        array of: "marketing" | "monetization" | "ux" | "dev" | "efficiency" | "content" | "analytics" | "security" | "docs" | "release" | "product" | "platform"
+tags:        array including "ai" (always) + any of: "marketing" | "monetization" | "ux" | "dev" | "efficiency" | "content" | "analytics" | "security" | "docs" | "release" | "product" | "platform"
 source:      "user-requested" | "recommended" | "local-note"
 addedBy:     Claude model ID string — ALWAYS set this when Claude creates the task
              e.g. "claude-sonnet-4-6" | "claude-opus-4-6" | "claude-haiku-4-5-20251001"

@@ -1,6 +1,6 @@
 {
   "_comment": "Source of truth for tracker.tasks in data/project-data.js. Edit here, then run: node scripts/sync-tasks.js",
-  "_syncedAt": "2026-04-05T19:34:10.834Z",
+  "_syncedAt": "2026-04-05T19:35:53.977Z",
   "tasks": [
     {
       "id": "LBM-003",

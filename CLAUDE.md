@@ -89,7 +89,7 @@ Every task must include a `description` with these four sections:
 
 ### Tags (multi-tag array)
 
-Assign one or more: `marketing` · `monetization` · `ux` · `dev` · `efficiency` · `content` · `analytics` · `security` · `docs` · `release` · `product` · `platform`
+Always include `ai` (reserved cyan tag — marks tasks created by Claude). Then assign one or more: `marketing` · `monetization` · `ux` · `dev` · `efficiency` · `content` · `analytics` · `security` · `docs` · `release` · `product` · `platform`
 
 For full details and worked examples, see `SKILL_ADD_TASK.md`.
 
