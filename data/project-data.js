@@ -121,7 +121,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "data/project-data.js"
@@ -138,7 +138,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "README.md",
@@ -156,7 +156,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: []
       },
@@ -171,7 +171,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "README.md",
@@ -189,7 +189,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "SKILL.md",
@@ -209,7 +209,7 @@ window.MCCProjectData = {
         source: "user-requested",
         recommendedBy: "",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "task-app.js",
@@ -229,7 +229,7 @@ window.MCCProjectData = {
         source: "user-requested",
         recommendedBy: "",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "SKILL_ADD_TASK.md"
@@ -248,7 +248,7 @@ window.MCCProjectData = {
         source: "user-requested",
         recommendedBy: "",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "CLAUDE_INTEGRATION_GUIDE.md"
@@ -267,7 +267,7 @@ window.MCCProjectData = {
         source: "user-requested",
         recommendedBy: "",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "task-app.js",
@@ -289,7 +289,7 @@ window.MCCProjectData = {
         source: "user-requested",
         recommendedBy: "",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "docs/AI_TASK_CREATION.md"
@@ -308,7 +308,7 @@ window.MCCProjectData = {
         source: "user-requested",
         recommendedBy: "",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "docs/VOICE_COMMANDS.md"
@@ -327,7 +327,7 @@ window.MCCProjectData = {
         source: "user-requested",
         recommendedBy: "",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "data/docs-content.js",
@@ -347,7 +347,7 @@ window.MCCProjectData = {
         source: "user-requested",
         recommendedBy: "",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "CLAUDE.md"
@@ -366,7 +366,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "docs/ROADMAP_SHORTCUTS.md",
@@ -386,7 +386,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "docs/ROADMAP_PRODUCT.md"
@@ -405,7 +405,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "docs/INTERNAL_ROADMAP.md"
@@ -424,7 +424,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "docs/INTERNAL_ROADMAP.md",
@@ -444,7 +444,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "docs/INTERNAL_ROADMAP.md"
@@ -463,7 +463,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "docs/INTERNAL_ROADMAP.md",
@@ -483,7 +483,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "docs/INTERNAL_ROADMAP.md"
@@ -502,7 +502,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "docs/KEYBOARD_SHORTCUTS.md"
@@ -521,7 +521,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "docs/PERSISTENCE_AND_STATE.md"
@@ -540,7 +540,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: []
       },
@@ -557,7 +557,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "data/project-data.js",
@@ -577,7 +577,7 @@ window.MCCProjectData = {
         source: "recommended",
         recommendedBy: "Claude Sonnet 4.6",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "styles.css"
@@ -596,7 +596,7 @@ window.MCCProjectData = {
         source: "user-requested",
         recommendedBy: "",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: []
       },
@@ -613,7 +613,7 @@ window.MCCProjectData = {
         source: "user-requested",
         recommendedBy: "",
         tags: [
-          "added by Claude"
+          "ai"
         ],
         references: [
           "task-app.js",
