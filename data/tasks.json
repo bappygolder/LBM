@@ -1,6 +1,6 @@
 {
   "_comment": "Source of truth for tracker.tasks in data/project-data.js. Edit here, then run: node scripts/sync-tasks.js",
-  "_syncedAt": "2026-04-05T19:07:35.348Z",
+  "_syncedAt": "2026-04-05T19:34:10.834Z",
   "tasks": [
     {
       "id": "LBM-003",
@@ -96,7 +96,7 @@
       "effort": 1,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["data/project-data.js"]
     },
     {
@@ -109,7 +109,7 @@
       "effort": 7,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["README.md", "docs/SETUP_GUIDE.md"]
     },
     {
@@ -122,7 +122,7 @@
       "effort": 8,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": []
     },
     {
@@ -135,7 +135,7 @@
       "effort": 2,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["README.md", "data/project-data.js"]
     },
     {
@@ -148,7 +148,7 @@
       "effort": 2,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["SKILL.md", "SKILL_ADD_SHORTCUT.md"]
     },
     {
@@ -163,7 +163,7 @@
       "effort": 3,
       "source": "user-requested",
       "recommendedBy": "",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["task-app.js", "SKILL_ADD_TASK.md"]
     },
     {
@@ -178,7 +178,7 @@
       "effort": 2,
       "source": "user-requested",
       "recommendedBy": "",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["SKILL_ADD_TASK.md"]
     },
     {
@@ -193,7 +193,7 @@
       "effort": 2,
       "source": "user-requested",
       "recommendedBy": "",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["CLAUDE_INTEGRATION_GUIDE.md"]
     },
     {
@@ -208,7 +208,7 @@
       "effort": 8,
       "source": "user-requested",
       "recommendedBy": "",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["task-app.js", "index.html", "styles.css", "docs/VOICE_COMMANDS.md"]
     },
     {
@@ -223,7 +223,7 @@
       "effort": 2,
       "source": "user-requested",
       "recommendedBy": "",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["docs/AI_TASK_CREATION.md"]
     },
     {
@@ -238,7 +238,7 @@
       "effort": 2,
       "source": "user-requested",
       "recommendedBy": "",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["docs/VOICE_COMMANDS.md"]
     },
     {
@@ -253,7 +253,7 @@
       "effort": 3,
       "source": "user-requested",
       "recommendedBy": "",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["data/docs-content.js", "data/project-data.js"]
     },
     {
@@ -268,7 +268,7 @@
       "effort": 1,
       "source": "user-requested",
       "recommendedBy": "",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["CLAUDE.md"]
     },
     {
@@ -283,7 +283,7 @@
       "effort": 9,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["docs/ROADMAP_SHORTCUTS.md", "SKILL_ADD_SHORTCUT.md"]
     },
     {
@@ -298,7 +298,7 @@
       "effort": 4,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["docs/ROADMAP_PRODUCT.md"]
     },
     {
@@ -313,7 +313,7 @@
       "effort": 2,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["docs/INTERNAL_ROADMAP.md"]
     },
     {
@@ -328,7 +328,7 @@
       "effort": 2,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["docs/INTERNAL_ROADMAP.md", "docs/ROADMAP_PRODUCT.md"]
     },
     {
@@ -343,7 +343,7 @@
       "effort": 10,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["docs/INTERNAL_ROADMAP.md"]
     },
     {
@@ -358,7 +358,7 @@
       "effort": 3,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["docs/INTERNAL_ROADMAP.md", "docs/ROADMAP_PRODUCT.md"]
     },
     {
@@ -373,7 +373,7 @@
       "effort": 10,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["docs/INTERNAL_ROADMAP.md"]
     },
     {
@@ -388,7 +388,7 @@
       "effort": 4,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["docs/KEYBOARD_SHORTCUTS.md"]
     },
     {
@@ -403,7 +403,7 @@
       "effort": 6,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["docs/PERSISTENCE_AND_STATE.md"]
     },
     {
@@ -418,7 +418,7 @@
       "effort": 6,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": []
     },
     {
@@ -433,7 +433,7 @@
       "effort": 1,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["data/project-data.js", "data/tasks.json"]
     },
     {
@@ -448,7 +448,7 @@
       "effort": 8,
       "source": "recommended",
       "recommendedBy": "Claude Sonnet 4.6",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["styles.css"]
     },
     {
@@ -463,7 +463,7 @@
       "effort": 9,
       "source": "user-requested",
       "recommendedBy": "",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": []
     },
     {
@@ -478,7 +478,7 @@
       "effort": 5,
       "source": "user-requested",
       "recommendedBy": "",
-      "tags": ["added by Claude"],
+      "tags": ["ai"],
       "references": ["task-app.js", "index.html", "styles.css"]
     }
   ]
