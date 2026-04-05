@@ -147,32 +147,42 @@
 
   // Tag system — predefined palette colors (index = color slot)
   const TAG_COLORS = [
-    { bg: "rgba(139,92,246,0.18)",  border: "rgba(139,92,246,0.35)",  text: "#c4b5fd" }, // purple
-    { bg: "rgba(56,189,248,0.15)",  border: "rgba(56,189,248,0.3)",   text: "#7dd3fc" }, // sky
-    { bg: "rgba(52,211,153,0.15)",  border: "rgba(52,211,153,0.3)",   text: "#6ee7b7" }, // green
-    { bg: "rgba(251,191,36,0.15)",  border: "rgba(251,191,36,0.3)",   text: "#fde68a" }, // amber
-    { bg: "rgba(239,68,68,0.15)",   border: "rgba(239,68,68,0.3)",    text: "#fca5a5" }, // red
-    { bg: "rgba(251,113,133,0.15)", border: "rgba(251,113,133,0.3)",  text: "#fda4af" }, // rose
-    { bg: "rgba(74,222,128,0.15)",  border: "rgba(74,222,128,0.3)",   text: "#86efac" }, // lime
-    { bg: "rgba(251,146,60,0.15)",  border: "rgba(251,146,60,0.3)",   text: "#fdba74" }, // orange
-    { bg: "rgba(236,72,153,0.15)",  border: "rgba(236,72,153,0.3)",   text: "#f9a8d4" }, // pink
-    { bg: "rgba(148,163,184,0.15)", border: "rgba(148,163,184,0.3)",  text: "#cbd5e1" }, // slate
+    { bg: "rgba(139,92,246,0.18)",  border: "rgba(139,92,246,0.35)",  text: "#c4b5fd" }, // purple   [0]
+    { bg: "rgba(56,189,248,0.15)",  border: "rgba(56,189,248,0.3)",   text: "#7dd3fc" }, // sky      [1]
+    { bg: "rgba(52,211,153,0.15)",  border: "rgba(52,211,153,0.3)",   text: "#6ee7b7" }, // green    [2]
+    { bg: "rgba(251,191,36,0.15)",  border: "rgba(251,191,36,0.3)",   text: "#fde68a" }, // amber    [3]
+    { bg: "rgba(239,68,68,0.15)",   border: "rgba(239,68,68,0.3)",    text: "#fca5a5" }, // red      [4]
+    { bg: "rgba(251,113,133,0.15)", border: "rgba(251,113,133,0.3)",  text: "#fda4af" }, // rose     [5]
+    { bg: "rgba(74,222,128,0.15)",  border: "rgba(74,222,128,0.3)",   text: "#86efac" }, // lime     [6]
+    { bg: "rgba(251,146,60,0.15)",  border: "rgba(251,146,60,0.3)",   text: "#fdba74" }, // orange   [7]
+    { bg: "rgba(236,72,153,0.15)",  border: "rgba(236,72,153,0.3)",   text: "#f9a8d4" }, // pink     [8]
+    { bg: "rgba(148,163,184,0.15)", border: "rgba(148,163,184,0.3)",  text: "#cbd5e1" }, // slate    [9]
+    { bg: "rgba(34,211,238,0.13)",  border: "rgba(34,211,238,0.32)",  text: "#67e8f9" }, // cyan/AI [10]
   ];
 
   const TAG_COLOR_LABELS = [
-    "Purple", "Sky", "Green", "Amber", "Red", "Rose", "Lime", "Orange", "Pink", "Slate"
+    "Purple", "Sky", "Green", "Amber", "Red", "Rose", "Lime", "Orange", "Pink", "Slate", "Cyan"
   ];
+
+  // Reserved tag names → fixed color index (never overwritten by round-robin)
+  const RESERVED_TAG_COLORS = { "ai": 10 };
 
   // Known tags registry: { [tagName]: colorIndex }
   let tagRegistry = {};
 
   function getTagColor(name) {
     if (tagRegistry[name] === undefined) {
-      // Assign next available color slot (round-robin)
-      const usedIndices = Object.values(tagRegistry);
-      let idx = 0;
-      while (usedIndices.includes(idx) && idx < TAG_COLORS.length - 1) idx++;
-      tagRegistry[name] = idx % TAG_COLORS.length;
+      // Reserved tags get a fixed slot
+      if (RESERVED_TAG_COLORS[name] !== undefined) {
+        tagRegistry[name] = RESERVED_TAG_COLORS[name];
+      } else {
+        // Assign next available color slot (round-robin), skip reserved slots
+        const reservedSlots = new Set(Object.values(RESERVED_TAG_COLORS));
+        const usedIndices = Object.values(tagRegistry);
+        let idx = 0;
+        while ((usedIndices.includes(idx) || reservedSlots.has(idx)) && idx < TAG_COLORS.length - 1) idx++;
+        tagRegistry[name] = idx % TAG_COLORS.length;
+      }
     }
     return TAG_COLORS[tagRegistry[name]];
   }
