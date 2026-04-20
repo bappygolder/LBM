@@ -9,7 +9,7 @@ window.MCCProjectData = {
   },
   tracker: {
     storageKey: "ltm-task-tracker-v1",
-    seedVersion: "2026-04-05-sync",
+    seedVersion: "2026-04-06-sync",
     installToken: "lbm-2026-04-04-r1",
     recommendedByLabel: "Codex (GPT-5)",
     areas: [
@@ -599,6 +599,25 @@ window.MCCProjectData = {
           "ai"
         ],
         references: []
+      },
+      {
+        id: "LBM-011",
+        title: "Jack",
+        notes: "Test task — maximum urgency and dollar value",
+        lane: "newly-added-or-updated",
+        urgency: 5,
+        value: 25000,
+        area: "project-system",
+        effort: 5,
+        source: "user-requested",
+        recommendedBy: "",
+        addedBy: "claude-sonnet-4-6",
+        tags: [
+          "dev",
+          "ai"
+        ],
+        references: [],
+        description: "## What to do\nThis is a test task named Jack. No action required — created to verify task creation flow with urgency 5 and value $25,000.\n\n## Why it matters\nValidates that the file-based task creation pipeline works correctly end to end, including sync script and browser reload.\n\n## Why it's valuable\nConfirms the $25,000 revenue tier is selectable and displays correctly in the UI. Serves as a reference example for the maximum urgency and value combination.\n\n## Why it's urgent\nTest task — added at maximum urgency to verify urgency-5 rendering and priority logic. No real time pressure."
       },
       {
         id: "LBM-C007",
